@@ -15,7 +15,7 @@ function LayoutHome() {
  
   return (
     <>
-      {/* <Header /> */}
+      <Header />
       {/* ĐANG GỌI TRONG APP.JS */}
     
 

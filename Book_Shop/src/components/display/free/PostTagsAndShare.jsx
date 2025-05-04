@@ -1,3 +1,5 @@
+// COMPONENT NÀY GẮN DƯỚI CHÂN BÀI VIẾT
+
 import React from "react";
 import { Box, Chip, Typography, IconButton } from "@mui/material";
 import { Facebook, Instagram, Twitter, LinkedIn, YouTube } from "@mui/icons-material";

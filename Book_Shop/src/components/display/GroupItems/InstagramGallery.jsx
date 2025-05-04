@@ -6,12 +6,12 @@ import Grid from "@mui/material/Grid";
 
 const InstagramGallery = () => {
   const instagramItems = [
-    { image: "/demo/images/insta-item1.jpg", link: "https://vnexpress.net/" },
-    { image: "/demo/images/insta-item2.jpg", link: "https://vnexpress.net/" },
-    { image: "/demo/images/insta-item3.jpg", link: "https://vnexpress.net/" },
-    { image: "/demo/images/insta-item4.jpg", link: "https://vnexpress.net/" },
-    { image: "/demo/images/insta-item5.jpg", link: "https://vnexpress.net/" },
-    { image: "/demo/images/insta-item6.jpg", link: "https://vnexpress.net/" },
+    { image: "/demo/images/insta-item1.jpg", link: "#" },
+    { image: "/demo/images/insta-item2.jpg", link: "#" },
+    { image: "/demo/images/insta-item3.jpg", link: "#" },
+    { image: "/demo/images/insta-item4.jpg", link: "#" },
+    { image: "/demo/images/insta-item5.jpg", link: "#" },
+    { image: "/demo/images/insta-item6.jpg", link: "#" },
   ];
 
   return (

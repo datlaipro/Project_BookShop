@@ -1,71 +1,107 @@
 package t2406e_group1.bookshopspringboot.maketing;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/api/discounts") // Endpoint chính của API
+@RequestMapping("/api/discounts")
+@CrossOrigin(origins = "http://localhost:3000")
 public class ControllerDiscount {
 
     @Autowired
     private ServiceDiscount serviceDiscount;
 
-    //  LẤY DANH SÁCH TẤT CẢ KHUYẾN MÃI
+    @Autowired
+    private JpaDiscountProduct jpaDiscountProduct;
+
     @GetMapping
-    public ResponseEntity<List<EntityDiscount>> getAllDiscounts() {
-        List<EntityDiscount> discounts = serviceDiscount.findAll();
+    public ResponseEntity<List<DiscountDTO>> getAllDiscounts() {
+        List<DiscountDTO> discounts = serviceDiscount.getAllDiscount();
         return ResponseEntity.ok(discounts);
     }
 
-    //  LẤY THÔNG TIN KHUYẾN MÃI THEO ID
     @GetMapping("/{id}")
-    public ResponseEntity<EntityDiscount> getDiscountById(@PathVariable int id) {
-        Optional<EntityDiscount> discount = serviceDiscount.findById(id);
-        return discount.map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.notFound().build());
+    public ResponseEntity<DiscountDTO> getDiscountById(@PathVariable Integer id) {
+        Optional<EntityDiscount> discountOpt = serviceDiscount.findById(id);
+        if (!discountOpt.isPresent()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+        EntityDiscount discount = discountOpt.get();
+        DiscountDTO discountDTO = new DiscountDTO();
+        discountDTO.setId(discount.getId());
+        discountDTO.setDateCreate(discount.getDateCreate());
+        discountDTO.setDateStart(discount.getDateStart());
+        discountDTO.setDateEnd(discount.getDateEnd());
+
+        List<DiscountProductDTO> productDTOs = jpaDiscountProduct.findByDiscount(discount).stream()
+            .map(dp -> new DiscountProductDTO(
+                dp.getProduct().getId(),
+                dp.getProduct().getName(),
+                dp.getProduct().getPrice(),
+                dp.getSalePrice(),
+                dp.getQuantity()
+            ))
+            .collect(Collectors.toList());
+
+        discountDTO.setDiscountProducts(productDTOs);
+        return ResponseEntity.ok(discountDTO);
     }
 
-    //  LẤY KHUYẾN MÃI THEO GIÁ SALE
-    @GetMapping("/saleprice/{salePrice}")
-    public ResponseEntity<List<EntityDiscount>> getDiscountsBySalePrice(@PathVariable float salePrice) {
-        List<EntityDiscount> discounts = serviceDiscount.findBySalePrice(salePrice);
-        if (discounts.isEmpty()) {
-            return ResponseEntity.notFound().build();
+    @GetMapping("/{id}/products")
+    public ResponseEntity<List<DiscountProductDTO>> getDiscountProducts(@PathVariable Integer id) {
+        Optional<EntityDiscount> discountOpt = serviceDiscount.findById(id);
+        if (!discountOpt.isPresent()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
-        return ResponseEntity.ok(discounts);
+        List<DiscountProduct> discountProducts = jpaDiscountProduct.findByDiscount(discountOpt.get());
+        List<DiscountProductDTO> productDTOs = discountProducts.stream()
+            .map(dp -> new DiscountProductDTO(
+                dp.getProduct().getId(),
+                dp.getProduct().getName(),
+                dp.getProduct().getPrice(),
+                dp.getSalePrice(),
+                dp.getQuantity()
+            ))
+            .collect(Collectors.toList());
+        return ResponseEntity.ok(productDTOs);
     }
-      
-    //  THÊM KHUYẾN MÃI MỚI
+
     @PostMapping
-    public ResponseEntity<EntityDiscount> createDiscount(@RequestBody EntityDiscount entityDiscount) {
-        EntityDiscount savedDiscount = serviceDiscount.saveEntityDiscount(entityDiscount);
-        return ResponseEntity.ok(savedDiscount);
-    }
-
-    //  CẬP NHẬT THÔNG TIN KHUYẾN MÃI
-    @PutMapping("/{id}")
-    public ResponseEntity<EntityDiscount> updateDiscount(@PathVariable int id, @RequestBody EntityDiscount updatedDiscount) {
-        Optional<EntityDiscount> existingDiscount = serviceDiscount.findById(id);
-        if (existingDiscount.isPresent()) {
-            updatedDiscount.setId(id); // Đảm bảo ID không thay đổi
-            EntityDiscount savedDiscount = serviceDiscount.saveEntityDiscount(updatedDiscount);
-            return ResponseEntity.ok(savedDiscount);
+    public ResponseEntity<?> createDiscount(@RequestBody DiscountDTO discountDTO) {
+        try {
+            EntityDiscount discount = serviceDiscount.createDiscount(discountDTO);
+            return ResponseEntity.status(HttpStatus.CREATED).body(discount);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error creating discount: " + e.getMessage());
         }
-        return ResponseEntity.notFound().build();
     }
 
-    // XOÁ KHUYẾN MÃI THEO ID
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateDiscount(@PathVariable Integer id, @RequestBody DiscountDTO discountDTO) {
+        try {
+            EntityDiscount updatedDiscount = serviceDiscount.updateDiscount(id, discountDTO);
+            return ResponseEntity.ok(updatedDiscount);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error updating discount: " + e.getMessage());
+        }
+    }
+
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteDiscount(@PathVariable int id) {
+    public ResponseEntity<Void> deleteDiscount(@PathVariable Integer id) {
         if (serviceDiscount.existsById(id)) {
             serviceDiscount.deleteById(id);
             return ResponseEntity.noContent().build();
         }
-        return ResponseEntity.notFound().build();
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
     }
 }

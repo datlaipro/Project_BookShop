@@ -1,75 +1,203 @@
 package t2406e_group1.bookshopspringboot.import_product;
 
+import org.hibernate.Hibernate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import jakarta.persistence.EntityNotFoundException;
-import java.util.List;
-import java.util.Optional;
+import t2406e_group1.bookshopspringboot.product.EntityProduct;
+import t2406e_group1.bookshopspringboot.product.JpaProduct;
+import t2406e_group1.bookshopspringboot.supplier.EntitySupplier;
+import t2406e_group1.bookshopspringboot.supplier.JpaSupplier;
 
-@Service // Đánh dấu lớp này là một Service trong Spring
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.List;
+
+@Service
 public class ServiceImportProduct {
 
-    @Autowired
-    private JpaImportProduct jpaImportProduct; // Repository để thao tác với cơ sở dữ liệu
+    private static final Logger logger = LoggerFactory.getLogger(ServiceImportProduct.class);
 
-    /**
-     * Lấy danh sách tất cả sản phẩm nhập kho từ cơ sở dữ liệu.
-     *
-     * @return Danh sách các sản phẩm nhập kho
-     */
+    @Autowired
+    private JpaImportProduct jpaImportProduct;
+
+    @Autowired
+    private JpaImportProductDetail jpaImportProductDetail;
+
+    @Autowired
+    private JpaProduct jpaProduct;
+
+    @Autowired
+    private JpaSupplier jpaSupplier;
+
+    private void updateProduct(EntityProduct product, float importPrice, int importQuantity) {
+        int newQuantity = product.getQuantity() + importQuantity;
+        float newPrice = (product.getPrice() * product.getQuantity() + 
+                         importPrice * importQuantity) / newQuantity;
+        product.setQuantity(newQuantity);
+        product.setPrice(newPrice);
+        jpaProduct.save(product);
+    }
+
     public List<EntityImportProduct> getAllImportProducts() {
         try {
-            return jpaImportProduct.findAll(); //  Đã sửa lỗi
+            logger.info("Lấy danh sách phiếu nhập hàng");
+            List<EntityImportProduct> importProducts = jpaImportProduct.findAll();
+            // Khởi tạo lazy-loaded properties
+            for (EntityImportProduct importProduct : importProducts) {
+                Hibernate.initialize(importProduct.getDetails());
+                for (EntityImportProductDetail detail : importProduct.getDetails()) {
+                    Hibernate.initialize(detail.getProduct());
+                    Hibernate.initialize(detail.getSupplier());
+                    if (detail.getProduct() != null) {
+                        Hibernate.initialize(detail.getProduct().getImages());
+                    }
+                }
+            }
+            logger.info("Tìm thấy {} phiếu nhập hàng", importProducts.size());
+            return importProducts;
         } catch (Exception e) {
-            throw new RuntimeException("Lỗi khi lấy danh sách sản phẩm nhập kho", e);
+            logger.error("Lỗi khi lấy danh sách phiếu nhập hàng", e);
+            throw new RuntimeException("Lỗi khi lấy danh sách phiếu nhập hàng", e);
         }
     }
 
-    /**
-     * Tìm kiếm một sản phẩm nhập kho theo ID.
-     *
-     * @param id ID của sản phẩm nhập kho cần tìm
-     * @return Đối tượng sản phẩm nhập kho nếu tìm thấy
-     * @throws RuntimeException nếu không tìm thấy sản phẩm với ID tương ứng
-     */
     public EntityImportProduct getImportProductById(int id) {
-        Optional<EntityImportProduct> product = jpaImportProduct.findById(id); //  Đã sửa lỗi
-        return product.orElseThrow(() -> new EntityNotFoundException ("Không tìm thấy sản phẩm với ID: " + id));
+        try {
+            logger.info("Lấy phiếu nhập hàng với ID: {}", id);
+            EntityImportProduct importProduct = jpaImportProduct.findById(id)
+                    .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy phiếu nhập hàng với ID: " + id));
+            // Khởi tạo lazy-loaded properties
+            Hibernate.initialize(importProduct.getDetails());
+            for (EntityImportProductDetail detail : importProduct.getDetails()) {
+                Hibernate.initialize(detail.getProduct());
+                Hibernate.initialize(detail.getSupplier());
+                if (detail.getProduct() != null) {
+                    Hibernate.initialize(detail.getProduct().getImages());
+                }
+            }
+            logger.info("Tìm thấy phiếu nhập hàng với ID: {}", id);
+            return importProduct;
+        } catch (Exception e) {
+            logger.error("Lỗi khi lấy phiếu nhập hàng với ID: {}", id, e);
+            throw new RuntimeException("Lỗi khi lấy phiếu nhập hàng với ID: " + id, e);
+        }
     }
 
-    /**
-     * Thêm một sản phẩm nhập kho mới vào cơ sở dữ liệu.
-     *
-     * @param importProduct Đối tượng sản phẩm nhập kho cần thêm
-     * @return Đối tượng sản phẩm nhập kho sau khi lưu vào cơ sở dữ liệu
-     */
-    public EntityImportProduct createImportProduct(EntityImportProduct importProduct) {
-        return jpaImportProduct.save(importProduct); // Lưu sản phẩm nhập kho vào DB
+    @Transactional
+    public EntityImportProduct createImportProduct(ImportProductDTO importProductDTO) {
+        logger.info("Tạo phiếu nhập hàng mới");
+        // Tạo phiếu nhập hàng
+        EntityImportProduct importProduct = new EntityImportProduct();
+        // Chuyển Date thành LocalDateTime
+        importProduct.setImportDate(importProductDTO.getImportDate().toInstant()
+                .atZone(ZoneId.systemDefault())
+                .toLocalDateTime());
+        importProduct.setTotalQuantity(importProductDTO.getDetails()
+                .stream()
+                .mapToInt(ImportProductDetailDTO::getQuantity)
+                .sum());
+
+        // Lưu phiếu nhập hàng
+        importProduct = jpaImportProduct.save(importProduct);
+
+        // Xử lý chi tiết phiếu nhập
+        List<EntityImportProductDetail> details = new ArrayList<>();
+        for (ImportProductDetailDTO detailDTO : importProductDTO.getDetails()) {
+            // Tìm sản phẩm
+            EntityProduct product = jpaProduct.findById(detailDTO.getProductId())
+                    .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy sản phẩm với ID: " + detailDTO.getProductId()));
+
+            // Tìm nhà cung cấp
+            EntitySupplier supplier = jpaSupplier.findById(detailDTO.getSupplierId())
+                    .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy nhà cung cấp với ID: " + detailDTO.getSupplierId()));
+
+            // Tạo chi tiết phiếu nhập
+            EntityImportProductDetail detail = new EntityImportProductDetail();
+            detail.setImportProduct(importProduct);
+            detail.setProduct(product);
+            detail.setProductName(detailDTO.getProductName());
+            // Chuyển float thành Double
+            detail.setImportPrice(Double.valueOf(detailDTO.getImportPrice()));
+            detail.setQuantity(detailDTO.getQuantity());
+            detail.setSupplier(supplier);
+            details.add(detail);
+
+            // Cập nhật sản phẩm
+            updateProduct(product, detailDTO.getImportPrice(), detailDTO.getQuantity());
+        }
+
+        // Lưu chi tiết phiếu nhập
+        importProduct.setDetails(details);
+        jpaImportProductDetail.saveAll(details);
+
+        logger.info("Tạo thành công phiếu nhập hàng với ID: {}", importProduct.getId());
+        return importProduct;
     }
 
-    /**
-     * Cập nhật thông tin sản phẩm nhập kho dựa trên ID.
-     *
-     * @param id ID của sản phẩm nhập kho cần cập nhật
-     * @param importProduct Dữ liệu sản phẩm nhập kho mới
-     * @return Đối tượng sản phẩm nhập kho sau khi cập nhật
-     * @throws RuntimeException nếu không tìm thấy sản phẩm với ID tương ứng
-     */
-    public EntityImportProduct updateImportProduct(int id, EntityImportProduct importProduct) {
-        EntityImportProduct existingProduct = getImportProductById(id); // Lấy sản phẩm hiện có theo ID
-        
-        existingProduct.setQuantity(importProduct.getQuantity()); // Cập nhật số lượng nhập kho
-         existingProduct.setPrice(importProduct.getPrice()); // Cập nhật giá nhập kho
-        // existingProduct.setDateImport(importProduct.getDateImport()); // Cập nhật ngày nhập kho
-        return jpaImportProduct.save(existingProduct); // Lưu thông tin cập nhật vào DB
+    @Transactional
+    public EntityImportProduct updateImportProduct(int id, ImportProductDTO importProductDTO) {
+        logger.info("Cập nhật phiếu nhập hàng với ID: {}", id);
+        EntityImportProduct existingImportProduct = getImportProductById(id);
+
+        // Cập nhật thông tin phiếu nhập
+        // Chuyển Date thành LocalDateTime
+        existingImportProduct.setImportDate(importProductDTO.getImportDate().toInstant()
+                .atZone(ZoneId.systemDefault())
+                .toLocalDateTime());
+        existingImportProduct.setTotalQuantity(importProductDTO.getDetails()
+                .stream()
+                .mapToInt(ImportProductDetailDTO::getQuantity)
+                .sum());
+
+        // Xóa chi tiết cũ
+        jpaImportProductDetail.deleteAll(existingImportProduct.getDetails());
+        existingImportProduct.getDetails().clear();
+
+        // Thêm chi tiết mới
+        List<EntityImportProductDetail> details = new ArrayList<>();
+        for (ImportProductDetailDTO detailDTO : importProductDTO.getDetails()) {
+            // Tìm sản phẩm
+            EntityProduct product = jpaProduct.findById(detailDTO.getProductId())
+                    .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy sản phẩm với ID: " + detailDTO.getProductId()));
+
+            // Tìm nhà cung cấp
+            EntitySupplier supplier = jpaSupplier.findById(detailDTO.getSupplierId())
+                    .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy nhà cung cấp với ID: " + detailDTO.getSupplierId()));
+
+            // Tạo chi tiết phiếu nhập
+            EntityImportProductDetail detail = new EntityImportProductDetail();
+            detail.setImportProduct(existingImportProduct);
+            detail.setProduct(product);
+            detail.setProductName(detailDTO.getProductName());
+            // Chuyển float thành Double
+            detail.setImportPrice(Double.valueOf(detailDTO.getImportPrice()));
+            detail.setQuantity(detailDTO.getQuantity());
+            detail.setSupplier(supplier);
+            details.add(detail);
+
+            // Cập nhật sản phẩm
+            updateProduct(product, detailDTO.getImportPrice(), detailDTO.getQuantity());
+        }
+
+        existingImportProduct.setDetails(details);
+        jpaImportProductDetail.saveAll(details);
+
+        EntityImportProduct updatedImportProduct = jpaImportProduct.save(existingImportProduct);
+        logger.info("Cập nhật thành công phiếu nhập hàng với ID: {}", id);
+        return updatedImportProduct;
     }
 
-    /**
-     * Xóa một sản phẩm nhập kho khỏi cơ sở dữ liệu dựa trên ID.
-     *
-     * @param id ID của sản phẩm nhập kho cần xóa
-     */
+    @Transactional
     public void deleteImportProduct(int id) {
-        jpaImportProduct.deleteById(id); // Xóa sản phẩm nhập kho khỏi DB theo ID
+        logger.info("Xóa phiếu nhập hàng với ID: {}", id);
+        EntityImportProduct importProduct = getImportProductById(id);
+        jpaImportProductDetail.deleteAll(importProduct.getDetails());
+        jpaImportProduct.delete(importProduct);
+        logger.info("Xóa thành công phiếu nhập hàng với ID: {}", id);
     }
 }

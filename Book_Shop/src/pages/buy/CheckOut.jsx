@@ -10,50 +10,73 @@ import {
   TableRow,
   Button,
   Paper,
-  TextField,
   Stack,
-  Divider,
-  colors,
 } from "@mui/material";
 import BreadcrumbsComponent from "../../components/display/free/BreadcrumbsComponent";
 import InstagramGallery from "../../components/display/GroupItems/InstagramGallery";
 import { useNavigate } from "react-router-dom";
 import BuyDone from "./BuyDone";
-import axios from "axios"; // import axios để gửi yêu cầu HTTP
-import { useState } from "react"; // import useState để quản lý trạng thái của component
-
-const cartItems = [
-  {
-    id: 1,
-    name: "The Emerald Crown",
-    price: 2000,
-    quantity: 1,
-    image: "/demo/images/cart-item1.png",
-  },
-  {
-    id: 2,
-    name: "The Last Enchantment",
-    price: 400,
-    quantity: 1,
-    image: "/demo/images/cart-item2.png",
-  },
-];
+import { useCart } from "../../components/action/CartContext";
+import axios from "axios";
 
 const CheckOut = () => {
-  const [formData, setFormData] = useState({// chứa dũ liệu của đơn hàng để gửi lên server
-    "status": "truyện doremon",
-    "phoneNumber": "0123456789"
-  });
-
   const navigate = useNavigate();
+  const { cartItems, clearCart } = useCart();
+  const [open, setOpen] = React.useState(false);
+  const [error, setError] = React.useState(null);
 
   const handleToCart = () => {
     navigate("/cart");
   };
-  const [open, setOpen] = React.useState(false);
 
-  const handleOpen = () => setOpen(true);
-  const handleClose = () => setOpen(false);
+  const handleOpen = async () => {
+    try {
+      // Lấy token từ localStorage với key đúng
+      const token = localStorage.getItem("jwtToken");
+      console.log("Token retrieved:", token); // Debug
+      if (!token) {
+        setError("Please log in to place an order");
+        return;
+      }
+
+      // Chuẩn bị dữ liệu cho API
+      const orderData = {
+        items: cartItems.map((item) => ({
+          productId: item.id,
+          quantity: item.quantity,
+          price: item.salePrice || item.price,
+        })),
+      };
+
+      // Gửi yêu cầu với token trong header
+      const response = await axios.post("http://localhost:6868/api/orders", orderData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.status === 200) {
+        setOpen(true);
+        clearCart();
+      }
+    } catch (err) {
+      setError(err.response?.data || "Failed to place order. Please try again.");
+      console.error("Checkout error:", err);
+    }
+  };
+
+  const handleClose = () => {
+    setOpen(false);
+    navigate("/");
+  };
+
+  // Tính tổng tiền
+  const calculateSubtotal = () => {
+    return cartItems.reduce((total, item) => {
+      const price = item.salePrice || item.price;
+      return total + price * item.quantity;
+    }, 0);
+  };
 
   return (
     <>
@@ -66,12 +89,16 @@ const CheckOut = () => {
         ]}
       />
 
-      <Box
-        sx={{ p: 6, width: "80%", margin: "auto", justifyContent: "center" }}
-      >
+      <Box sx={{ p: 6, width: "80%", margin: "auto", justifyContent: "center" }}>
         <Typography variant="h3" gutterBottom textAlign="center">
           Checkout
         </Typography>
+
+        {error && (
+          <Typography color="error" sx={{ mb: 2, textAlign: "center" }}>
+            {error}
+          </Typography>
+        )}
 
         {/* Bảng sản phẩm */}
         <TableContainer component={Paper} sx={{ mb: 4 }}>
@@ -81,13 +108,9 @@ const CheckOut = () => {
                 <TableCell colSpan={3} align="center">
                   <Typography variant="h6">
                     <Box component="span" className="order-label">
-                      Thanh toán cho đơn hàng số:
+                      Payment for order number:
                     </Box>{" "}
-                    <Box
-                      component="span"
-                      className="order-number"
-                      sx={{ color: "red" }}
-                    >
+                    <Box component="span" className="order-number" sx={{ color: "error.main" }}>
                       #KKK67890
                     </Box>
                   </Typography>
@@ -108,29 +131,37 @@ const CheckOut = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {cartItems.map((item) => (
-                <TableRow key={item.id}>
-                  <TableCell>
-                    <Stack direction="row" spacing={2} alignItems="center">
-                      <img
-                        src={item.image}
-                        alt={item.name}
-                        width={80}
-                        style={{ borderRadius: 8 }}
-                      />
-                      <Typography variant="h5">{item.name}</Typography>
-                    </Stack>
-                  </TableCell>
-                  <TableCell align="center">
-                    <Typography variant="h5">{item.quantity}</Typography>
-                  </TableCell>
-                  <TableCell align="center">
-                    <Typography variant="h5">
-                      ${item.price * item.quantity}
-                    </Typography>
+              {cartItems.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={3} align="center">
+                    <Typography variant="h6">Your cart is empty</Typography>
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                cartItems.map((item) => (
+                  <TableRow key={item.id}>
+                    <TableCell>
+                      <Stack direction="row" spacing={2} alignItems="center">
+                        <img
+                          src={item.image}
+                          alt={item.name}
+                          width={80}
+                          style={{ borderRadius: 8 }}
+                        />
+                        <Typography variant="h5">{item.name}</Typography>
+                      </Stack>
+                    </TableCell>
+                    <TableCell align="center">
+                      <Typography variant="h5">{item.quantity}</Typography>
+                    </TableCell>
+                    <TableCell align="center">
+                      <Typography variant="h5" color="error.main">
+                        {(item.salePrice || item.price) * item.quantity} VNĐ
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </TableContainer>
@@ -146,8 +177,8 @@ const CheckOut = () => {
                   </Typography>
                 </TableCell>
                 <TableCell align="right">
-                  <Typography variant="h6" color="red" sx={{ mr: 5 }}>
-                    $2400.00
+                  <Typography variant="h6" color="error.main" sx={{ mr: 5 }}>
+                    {calculateSubtotal().toLocaleString()} VNĐ
                   </Typography>
                 </TableCell>
               </TableRow>
@@ -158,8 +189,8 @@ const CheckOut = () => {
                   </Typography>
                 </TableCell>
                 <TableCell align="right">
-                  <Typography variant="h6" color="red" sx={{ mr: 5 }}>
-                    $2400.00
+                  <Typography variant="h6" color="error.main" sx={{ mr: 5 }}>
+                    {calculateSubtotal().toLocaleString()} VNĐ
                   </Typography>
                 </TableCell>
               </TableRow>
@@ -175,7 +206,7 @@ const CheckOut = () => {
             </Typography>
             <Stack spacing={2}>
               <Typography variant="h5">
-                <strong>Full Name:</strong> John Doe
+                <strong>Full Name:</strong> Lee Jung Joe
               </Typography>
               <Typography variant="h5">
                 <strong>Address:</strong> 123 Main St, Springfield
@@ -220,27 +251,17 @@ const CheckOut = () => {
           </Button>
           <Button
             variant="contained"
+            disabled={cartItems.length === 0}
             sx={{
-              backgroundColor: "#F86D72",
+              backgroundColor: cartItems.length === 0 ? "grey.500" : "#F86D72",
               fontWeight: "bold",
               p: 2,
               fontSize: "20px",
               borderRadius: 20,
               color: "white",
-              "&:hover": { backgroundColor: "#183e3e" },
+              "&:hover": { backgroundColor: cartItems.length === 0 ? "grey.500" : "#183e3e" },
             }}
-            onClick={() => {
-                handleOpen();
-                axios.post('http://localhost:6868/api/orders', formData)// đẩy đơn hàng lên server 
-                .then(response => {
-                  console.log('Post created:', response.data);
-                })
-                .catch(err => {
-                  console.error('Error creating post:', err);
-                });
-            }
-                
-              }
+            onClick={handleOpen}
           >
             Place Order
           </Button>

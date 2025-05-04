@@ -1,48 +1,58 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import ProductSlider from '../product/ProductSlider';
-import { Box, Container, Typography, Link, Button } from '@mui/material';
-
-const products = [
-  {
-    id: 1,
-    name: 'House of Sky Breath',
-    author: 'Lauren Asher',
-    price: 870,
-    rating: 5,
-    discount: '10% off',
-    image: '/demo/images/product-item1.png',
-  },
-  {
-    id: 2,
-    name: 'Heartland Stars',
-    author: 'Lauren Asher',
-    price: 870,
-    rating: 5,
-    discount: '35% off',
-    image: '/demo/images/product-item2.png',
-  },
-  {
-    id: 3,
-    name: 'Heavenly Bodies',
-    author: 'Lauren Asher',
-    price: 870,
-    rating: 5,
-    discount: '40% off',
-    image: '/demo/images/product-item3.png',
-  },
-  {
-    id: 4,
-    name: 'AAAAAAAAAAAAAAA AAAAAAAAA',
-    author: 'Lauren Asher',
-    price: 870,
-    rating: 5,
-    discount: '50% off',
-    image: '/demo/images/product-item3.png',
-  },
-  // Add more products here
-];
+import { Box, Container, Typography, Button } from '@mui/material';
+import axios from 'axios';
 
 const BestSellingItems = () => {
+  const [products, setProducts] = useState([]);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const response = await axios.get('http://localhost:6868/api/product');
+        const data = response.data;
+
+        // Chuyển đổi ProductDTO thành định dạng ProductSlider
+        const mappedProducts = data.map((product) => ({
+          id: product.id,
+          name: product.name,
+          author: product.author,
+          price: product.price,
+          salePrice: product.salePrice || product.price, // VNĐ
+          rating: 5, // Dữ liệu mẫu
+          discount: product.discountPercentage ? `${product.discountPercentage}% off` : null,
+          image: product.images?.[0]?.imagePath || '/demo/images/placeholder.png',
+          // salePrice: product.salePrice || null, // Lưu salePrice để dùng trong Cart
+        }));
+
+        // Lấy tối đa 8 sản phẩm
+        setProducts(mappedProducts.slice(0, 8));
+      } catch (err) {
+        setError('Failed to load products. Please try again later.');
+        console.error(err);
+      }
+    };
+
+    fetchProducts();
+  }, []);
+
+  if (error) {
+    return (
+      <Box sx={{ py: 4, textAlign: 'center' }}>
+        <Typography color="error">{error}</Typography>
+      </Box>
+    );
+  }
+
+  if (products.length === 0) {
+    return (
+      <Box sx={{ py: 4, textAlign: 'center' }}>
+        <Typography>No products available.</Typography>
+      </Box>
+    );
+  }
+
   return (
     <Box 
       component="section" 
@@ -56,8 +66,7 @@ const BestSellingItems = () => {
             justifyContent: 'space-between', 
             alignItems: 'center', 
             marginBottom: '1rem',
-            // maxWidth: '80%',
-            paddingLeft: { xs: '100px', sm: '100px', lg: '150px' }, // Điều chỉnh khoảng cách tùy theo màn hình
+            paddingLeft: { xs: '100px', sm: '100px', lg: '150px' },
             paddingRight: { xs: '100px', sm: '100px', lg: '150px' },
           }}
         >
@@ -65,9 +74,8 @@ const BestSellingItems = () => {
             variant="h5" 
             component="h3" 
             sx={{ fontSize: '2.5rem' }}
-            // sx={{ fontWeight: 'bold' }}
           >
-            Best selling items
+            Featured Products
           </Typography>
           <Button 
             href="/shop" 
@@ -76,10 +84,10 @@ const BestSellingItems = () => {
               backgroundColor: '#F86D72', 
               color: '#FFFFFF', 
               fontSize: '0.875rem', 
-              borderRadius: "30px", /* Bo tròn 4 góc */
+              borderRadius: '30px',
               fontWeight: '500', 
               textTransform: 'none', 
-              textAlign: 'center', /* Căn giữa chữ */
+              textAlign: 'center',
               '&:hover': { backgroundColor: '#D85A60' } 
             }}
           >
@@ -93,4 +101,3 @@ const BestSellingItems = () => {
 };
 
 export default BestSellingItems;
-

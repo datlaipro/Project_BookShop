@@ -48,7 +48,7 @@ const GalleryProduct = ({ images }) => {
         <Slider
           asNavFor={nav1}
           ref={slider2}
-          slidesToShow={3} // Hiển thị tối đa 3 ảnh
+          slidesToShow={2} // Hiển thị tối đa 3 ảnh
           slidesToScroll={1}
           arrows={false}
           focusOnSelect={true}
@@ -63,7 +63,7 @@ const GalleryProduct = ({ images }) => {
                 alt={`thumb-${index}`} 
                 style={{
                   width: "100%", 
-                  // maxWidth: "800px",
+                  // maxWidth: "300px",
                   marginTop: "10px",
                   borderRadius: "8px", 
                   border: "2px solid transparent"
@@ -78,7 +78,7 @@ const GalleryProduct = ({ images }) => {
           onClick={handleNextThumb}
           sx={{
             position: "absolute",
-            bottom: +50,
+            bottom: -15,
             left: "50%",
             transform: "translateX(-50%)",
             backgroundColor: "white",
@@ -105,7 +105,7 @@ const GalleryProduct = ({ images }) => {
                 alt={`product-${index}`} 
                 style={{
                   width: "100%",
-                  // maxWidth: "800px",
+                  maxWidth: "400px",
                   borderRadius: "8px"
                 }} 
               />

@@ -1,10 +1,3 @@
-// TODO
-// API: Fetch dữ liệu từ /api/orders, /api/users, /api/products và gửi dữ liệu qua POST/PUT.
-// Rating riêng lẻ: Nếu muốn mỗi sản phẩm có rating và comment riêng trong cơ sở dữ liệu, cần điều chỉnh cấu trúc dữ liệu reviews.
-// rating riêng cho từng sản phẩm (CÁI NÀY QUAN TRỌN, CẦN THAY ĐỔI CẢ CSDL, NẾU KO PHẢI LOGIC CHON ĐÁNH GIÁ Ở 1 Ô THÌ TẤT CẢ CÁC Ô KHÁC ĂN THEO)
-// Xác nhận: Thêm dialog xác nhận trước khi submit.
-// xử lý COMMENT ĐÁNH GIÁ CHUNG TƯƠNG TỰ RATING
-
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
@@ -21,19 +14,24 @@ import {
   TableRow,
   Alert,
   Rating,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
 } from '@mui/material';
 import Autocomplete from '@mui/material/Autocomplete';
 
 // Dữ liệu mẫu
 const users = [
-  { id: 1, name: 'Nguyễn Văn A' },
-  { id: 2, name: 'Trần Thị B' },
+  { id: 1, name: 'Lee Jung Joe' },
+  { id: 2, name: 'Park Ji Sung' },
 ];
 
 const products = [
-  { id: 1, name: 'Áo thun' },
-  { id: 2, name: 'Quần jeans' },
-  { id: 3, name: 'Giày thể thao' },
+  { id: 1, name: 'Life Skills for Tweens' },
+  { id: 2, name: '101 Things Every Kid Needs To Know' },
+  { id: 3, name: 'Life Skills for Teens' },
 ];
 
 const orders = [
@@ -76,11 +74,8 @@ function EditReview() {
   const navigate = useNavigate();
   const initialReview = reviews.find((r) => r.id === parseInt(reviewId)) || {};
 
-  // State cho ngày đánh giá
+  // State cho form
   const [dateReview, setDateReview] = useState(initialReview.dateReview || '');
-  const [error, setError] = useState('');
-
-  // State cho đơn hàng và sản phẩm đã chọn
   const [selectedOrder, setSelectedOrder] = useState(
     orders.find((o) => o.id === initialReview.orderId) || null
   );
@@ -91,13 +86,13 @@ function EditReview() {
           .products.map((item) => ({
             productId: item.productId,
             name: products.find((p) => p.id === item.productId)?.name || 'Không xác định',
-            rating: initialReview.rating, // Giả định rating chung cho tất cả sản phẩm
-            comment: initialReview.comment, // Giả định comment chung
+            rating: initialReview.rating, // Giả định rating ban đầu chung
+            comment: initialReview.comment, // Giả định comment ban đầu chung
           }))
       : []
   );
-
-  const [sharedRating, setSharedRating] = useState(initialReview.rating || 0); // Rating chung
+  const [error, setError] = useState('');
+  const [openDialog, setOpenDialog] = useState(false);
 
   // Xử lý thay đổi ngày
   const handleDateChange = (e) => {
@@ -105,29 +100,12 @@ function EditReview() {
     setError('');
   };
 
-  // Xử lý khi chọn đơn hàng từ Autocomplete
-  const handleOrderChange = (event, newValue) => {
-    setSelectedOrder(newValue);
-    if (newValue) {
-      const orderProducts = orders
-        .find((o) => o.id === newValue.id)
-        .products.map((item) => ({
-          productId: item.productId,
-          name: products.find((p) => p.id === item.productId)?.name || 'Không xác định',
-          rating: sharedRating, // Rating chung
-          comment: '',
-        }));
-      setSelectedProducts(orderProducts);
-    } else {
-      setSelectedProducts([]);
-      setSharedRating(0); // Reset rating khi không có đơn hàng
-    }
-  };
-// Xử lý thay đổi rating (chung cho tất cả sản phẩm)
-const handleRatingChange = (newValue) => {
-    setSharedRating(newValue);
+  // Xử lý thay đổi rating cho từng sản phẩm
+  const handleRatingChange = (productId, newValue) => {
     setSelectedProducts((prev) =>
-      prev.map((product) => ({ ...product, rating: newValue }))
+      prev.map((product) =>
+        product.productId === productId ? { ...product, rating: newValue } : product
+      )
     );
   };
 
@@ -142,78 +120,111 @@ const handleRatingChange = (newValue) => {
 
   // Kiểm tra dữ liệu hợp lệ
   const isValid = () => {
-    if (!dateReview || !selectedOrder || sharedRating === 0) return false;
-    return selectedProducts.every((p) => p.comment.trim() !== '');
+    if (!dateReview || !selectedOrder) return false;
+    return selectedProducts.every((p) => p.rating > 0 && p.comment.trim() !== '');
+  };
+
+  // Mở dialog xác nhận
+  const handleOpenDialog = (e) => {
+    e.preventDefault();
+    if (!isValid()) {
+      setError('Vui lòng điền đầy đủ ngày, đơn hàng, điểm đánh giá và bình luận cho từng sản phẩm');
+      return;
+    }
+    setOpenDialog(true);
+  };
+
+  // Đóng dialog
+  const handleCloseDialog = () => {
+    setOpenDialog(false);
   };
 
   // Xử lý submit form
-  const handleSubmit = (e) => {
-    e.preventDefault();
-
-    if (!isValid()) {
-      setError('Vui lòng điền đầy đủ ngày, đơn hàng, điểm đánh giá và bình luận');
-      return;
-    }
-
-    const reviewData = {
-      id: parseInt(reviewId),
+  const handleSubmit = () => {
+    const reviewData = selectedProducts.map((product, index) => ({
+      id: parseInt(reviewId) + index, // Giả lập ID mới cho mỗi sản phẩm
       dateReview,
       orderId: selectedOrder.id,
       userId: orders.find((o) => o.id === selectedOrder.id).userId,
-      rating: sharedRating,
-      products: selectedProducts.map(({ productId, comment }) => ({
-        productId,
-        comment,
-      })),
-    };
-    console.log('Cập nhật review:', reviewData);
-    navigate('/admin/reviews');
+      productId: product.productId,
+      rating: product.rating,
+      comment: product.comment,
+    }));
+
+    console.log('Cập nhật reviews:', reviewData);
+    setOpenDialog(false);
+    navigate('/admin/review');
   };
 
   if (!initialReview.id) {
     return (
-      <Box sx={{ mt: 8 }}>
-        <Typography variant="h6">Không tìm thấy đánh giá</Typography>
+      <Box sx={{ mt: 8, px: { xs: 2, sm: 4 }, maxWidth: '1400px', mx: 'auto' }}>
+        <Typography
+          variant="h6"
+          sx={{
+            color: 'text.secondary',
+            fontWeight: 'medium',
+            textAlign: 'center',
+          }}
+        >
+          Không tìm thấy đánh giá
+        </Typography>
       </Box>
     );
   }
 
   return (
-    <Box sx={{ mt: 8 }}>
-      <Typography variant="h5" gutterBottom>
+    <Box sx={{ mt: 8, px: { xs: 2, sm: 4 }, maxWidth: '1400px', mx: 'auto' }}>
+      <Typography
+        variant="h5"
+        sx={{
+          fontWeight: 'bold',
+          color: '#1a2820',
+          letterSpacing: '0.5px',
+          mb: 3,
+        }}
+      >
         Chỉnh sửa đánh giá #{reviewId}
       </Typography>
-      <Paper sx={{ p: 3 }}>
-        <Box component="form" onSubmit={handleSubmit}>
-          {/* Khu vực chọn ngày */}
-          {/* <Box sx={{ mb: 3 }}>
-            <TextField
-              label="Ngày đánh giá"
-              name="dateReview"
-              type="date"
-              value={dateReview}
-              onChange={handleDateChange}
-              InputLabelProps={{ shrink: true }}
-              required
-              fullWidth
-            />
-          </Box> */}
-                    <Box>
-                      <TextField
-                        label="ĐỔI CHỖ NÀY THÀNH GHI CHÚ GÌ ĐÓ NHÉ, BỎ TEXTFIELD ĐI"
-                        fullWidth
-          
-                        />
-                    </Box>
-
-        {/* Hiển thị lỗi nếu có */}
-        {error && (
-            <Alert severity="error" sx={{ mb: 2 }}>
+      <Paper
+        sx={{
+          p: 3,
+          borderRadius: '12px',
+          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
+        }}
+      >
+        <Box component="form" onSubmit={handleOpenDialog}>
+          {error && (
+            <Alert
+              severity="error"
+              sx={{
+                borderRadius: '8px',
+                mb: 2,
+              }}
+            >
               {error}
             </Alert>
           )}
 
-          {/* Ô chọn đơn hàng */}
+          {/* Ô chọn ngày */}
+          <TextField
+            label="Ngày đánh giá"
+            type="date"
+            value={dateReview}
+            onChange={handleDateChange}
+            fullWidth
+            disabled
+            margin="normal"
+            InputLabelProps={{ shrink: true }}
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                borderRadius: '8px',
+              },
+            }}
+            required
+          />
+
+          {/* Ô chọn đơn hàng (chỉ xem) */}
           <Autocomplete
             options={orders}
             value={selectedOrder}
@@ -221,13 +232,17 @@ const handleRatingChange = (newValue) => {
               const user = users.find((u) => u.id === option.userId);
               return `${option.id} - Khách hàng: ${user ? user.name : 'Không xác định'}`;
             }}
-            onChange={handleOrderChange}
+            disabled
             renderInput={(params) => (
               <TextField
                 {...params}
-                label="Chọn đơn hàng"
-                placeholder="Gõ ID đơn hàng"
+                label="Đơn hàng"
                 margin="normal"
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: '8px',
+                  },
+                }}
               />
             )}
             fullWidth
@@ -235,10 +250,28 @@ const handleRatingChange = (newValue) => {
 
           {/* Bảng sản phẩm đã chọn */}
           {selectedProducts.length > 0 && (
-            <TableContainer sx={{ mt: 2 }}>
+            <TableContainer
+              sx={{
+                mt: 2,
+                borderRadius: '8px',
+                border: '1px solid',
+                borderColor: 'grey.200',
+              }}
+            >
               <Table>
                 <TableHead>
-                  <TableRow>
+                  <TableRow
+                    sx={{
+                      backgroundColor: 'grey.100',
+                      '& th': {
+                        fontWeight: 'bold',
+                        color: 'text.primary',
+                        py: 2,
+                        borderBottom: '2px solid',
+                        borderColor: 'grey.300',
+                      },
+                    }}
+                  >
                     <TableCell>ID sản phẩm</TableCell>
                     <TableCell>Tên sản phẩm</TableCell>
                     <TableCell>Điểm đánh giá</TableCell>
@@ -247,14 +280,30 @@ const handleRatingChange = (newValue) => {
                 </TableHead>
                 <TableBody>
                   {selectedProducts.map((product) => (
-                    <TableRow key={product.productId}>
+                    <TableRow
+                      key={product.productId}
+                      sx={{
+                        '&:hover': {
+                          backgroundColor: 'grey.50',
+                          transition: 'background-color 0.2s',
+                        },
+                        '& td': {
+                          py: 1.5,
+                          borderBottom: '1px solid',
+                          borderColor: 'grey.200',
+                        },
+                      }}
+                    >
                       <TableCell>{product.productId}</TableCell>
                       <TableCell>{product.name}</TableCell>
                       <TableCell>
                         <Rating
-                          value={sharedRating}
-                          onChange={(e, newValue) => handleRatingChange(newValue)}
+                          value={product.rating}
+                          onChange={(e, newValue) =>
+                            handleRatingChange(product.productId, newValue)
+                          }
                           precision={1}
+                          sx={{ color: 'yelow' }}
                         />
                       </TableCell>
                       <TableCell>
@@ -266,6 +315,11 @@ const handleRatingChange = (newValue) => {
                           size="small"
                           fullWidth
                           required
+                          sx={{
+                            '& .MuiOutlinedInput-root': {
+                              borderRadius: '8px',
+                            },
+                          }}
                         />
                       </TableCell>
                     </TableRow>
@@ -275,23 +329,114 @@ const handleRatingChange = (newValue) => {
             </TableContainer>
           )}
 
-          {/* Nút submit */}
-          <Box sx={{ mt: 3 }}>
+          {/* Nút submit và hủy */}
+          <Box sx={{ mt: 3, display: 'flex', gap: 2 }}>
             <Button
               type="submit"
               variant="contained"
               color="primary"
-              sx={{ mr: 2 }}
               disabled={!selectedOrder}
+              sx={{
+                borderRadius: '20px',
+                textTransform: 'none',
+                fontWeight: 'medium',
+                px: 3,
+                py: 1,
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+                '&:hover': {
+                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                  bgcolor: 'primary.dark',
+                },
+                '&.Mui-disabled': {
+                  bgcolor: 'grey.300',
+                  color: 'grey.600',
+                },
+              }}
             >
               Lưu
             </Button>
-            <Button variant="outlined" onClick={() => navigate('/admin/reviews')}>
+            <Button
+              variant="outlined"
+              color="primary"
+              onClick={() => navigate('/admin/review')}
+              sx={{
+                borderRadius: '20px',
+                textTransform: 'none',
+                fontWeight: 'medium',
+                px: 3,
+                py: 1,
+                borderColor: 'primary.main',
+                color: 'primary.main',
+                '&:hover': {
+                  borderColor: 'primary.dark',
+                  bgcolor: 'grey.50',
+                },
+              }}
+            >
               Hủy
             </Button>
           </Box>
         </Box>
       </Paper>
+
+      {/* Dialog xác nhận */}
+      <Dialog
+        open={openDialog}
+        onClose={handleCloseDialog}
+        PaperProps={{
+          sx: {
+            borderRadius: '12px',
+          },
+        }}
+      >
+        <DialogTitle
+          sx={{
+            fontWeight: 'bold',
+            color: '#1a2820',
+          }}
+        >
+          Xác nhận chỉnh sửa đánh giá
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText
+            sx={{
+              color: 'text.secondary',
+            }}
+          >
+            Bạn có chắc muốn lưu các thay đổi cho đánh giá này? Vui lòng kiểm tra kỹ thông tin trước khi xác nhận.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={handleCloseDialog}
+            sx={{
+              borderRadius: '8px',
+              textTransform: 'none',
+              color: 'primary.main',
+              '&:hover': {
+                bgcolor: 'grey.50',
+              },
+            }}
+          >
+            Hủy
+          </Button>
+          <Button
+            onClick={handleSubmit}
+            sx={{
+              borderRadius: '8px',
+              textTransform: 'none',
+              color: 'primary.main',
+              '&:hover': {
+                bgcolor: 'grey.50',
+                color: 'primary.dark',
+              },
+            }}
+            autoFocus
+          >
+            Xác nhận
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

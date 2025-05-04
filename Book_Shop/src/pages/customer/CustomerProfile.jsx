@@ -13,12 +13,9 @@ import {
   Paper,
   Stack,
 } from "@mui/material";
-import PaginationComponent from '../../components/display/free/PaginationComponent'; // Component phân trang
+import PaginationComponent from '../../components/display/free/PaginationComponent';
 import InstagramGallery from "../../components/display/GroupItems/InstagramGallery";
-// import LatestPosts from "../../components/display/post/LatestPosts";
 import BreadcrumbsComponent from '../../components/display/free/BreadcrumbsComponent';
-
-
 
 const customer = {
   name: "Nguyen Van A",
@@ -67,75 +64,196 @@ const orders = [
 const CustomerProfile = () => {
   return (
     <>
-                <BreadcrumbsComponent
-                title="Customer Profile"
-                breadcrumbs={[
-                    { label: "Home", href: "/" },
-                    { label: "Customer", href: "/customerprofile" },
-                    { label: "Customer" },
-                ]}
-            />
-    <Container maxWidth="lg">
-      {/* Thông tin customer */}
-      <Box display="flex" alignItems="center" gap={3} mt={5}>
-        <Avatar src={customer.avatar} sx={{ width: 100, height: 100 }} />
-        <Box>
-          <Typography variant="h4">{customer.name}</Typography>
-          <Typography variant="body1">Tuổi: {customer.age}</Typography>
-          <Typography variant="body1">SĐT: {customer.phone}</Typography>
-          <Typography variant="body1">Email: {customer.email}</Typography>
-          <Typography variant="body1">Địa chỉ: {customer.address}</Typography>
+      <BreadcrumbsComponent
+        title="Customer Profile"
+        breadcrumbs={[
+          { label: "Home", href: "/" },
+          { label: "Customer" },
+        ]}
+        sx={{
+          mb: 3,
+          '& .MuiBreadcrumbs-li': {
+            color: 'text.secondary',
+          },
+        }}
+      />
+      <Container maxWidth="lg">
+        {/* Thông tin customer */}
+        <Box
+          display="flex"
+          flexDirection={{ xs: 'column', sm: 'row' }}
+          alignItems={{ xs: 'center', sm: 'center' }}
+          gap={3}
+          mt={5}
+          px={{ xs: 2, sm: 4 }}
+          maxWidth="1400px"
+          mx="auto"
+        >
+          <Avatar
+            src={customer.avatar}
+            sx={{
+              width: 100,
+              height: 100,
+              border: '2px solid',
+              borderColor: 'grey.200',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+            }}
+          />
+          <Box>
+            <Typography
+              variant="h4"
+              sx={{
+                fontWeight: 'bold',
+                color: '#1a2820',
+                letterSpacing: '0.5px',
+                mb: 1,
+              }}
+            >
+              {customer.name}
+            </Typography>
+            <Typography
+              variant="body1"
+              sx={{ color: 'text.secondary', mb: 0.5 }}
+            >
+              Birthday: {customer.age}
+            </Typography>
+            <Typography
+              variant="body1"
+              sx={{ color: 'text.secondary', mb: 0.5 }}
+            >
+              Phone Number: {customer.phone}
+            </Typography>
+            <Typography
+              variant="body1"
+              sx={{ color: 'text.secondary', mb: 0.5 }}
+            >
+              Email: {customer.email}
+            </Typography>
+            <Typography
+              variant="body1"
+              sx={{ color: 'text.secondary' }}
+            >
+              Address: {customer.address}
+            </Typography>
+          </Box>
         </Box>
-      </Box>
 
-      {/* Danh sách đơn hàng */}
-      <Typography variant="h5" mt={5} mb={2}>
-        Đơn hàng đã mua
-      </Typography>
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Mã đơn</TableCell>
-              <TableCell>Ngày mua</TableCell>
-              <TableCell>Sản phẩm</TableCell>
-              <TableCell>Tổng tiền</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {orders.map((order) => (
-              <TableRow key={order.id}>
-                <TableCell>{order.id}</TableCell>
-                <TableCell>{order.date}</TableCell>
-                <TableCell>
-                  {order.products.map((product, index) => (
-                    <Stack direction="row" spacing={2} key={index} alignItems="center" mt={1}>
-                      <img
-                        src={product.image}
-                        alt={product.name}
-                        width={50}
-                        style={{ borderRadius: 8 }}
-                      />
-                      <Box>
-                        <Typography variant="body1">{product.name}</Typography>
-                        <Typography variant="body2">
-                          {product.quantity} x ${product.price}
-                        </Typography>
-                      </Box>
-                    </Stack>
-                  ))}
-                </TableCell>
-                <TableCell>${order.total}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
-    </Container>
-    <PaginationComponent />
-    {/* <LatestPosts /> */}
-    <InstagramGallery />
-
+        {/* Danh sách đơn hàng */}
+        <Box px={{ xs: 2, sm: 4 }} maxWidth="1400px" mx="auto">
+          <Typography
+            variant="h5"
+            mt={5}
+            mb={2}
+            sx={{
+              fontWeight: 'bold',
+              color: '#1a2820',
+              letterSpacing: '0.5px',
+            }}
+          >
+            Đơn hàng đã mua
+          </Typography>
+          <TableContainer
+            component={Paper}
+            sx={{
+              borderRadius: '8px',
+              border: '1px solid',
+              borderColor: 'grey.200',
+            }}
+          >
+            <Table>
+              <TableHead>
+                <TableRow
+                  sx={{
+                    backgroundColor: 'grey.100',
+                    '& th': {
+                      fontWeight: 'bold',
+                      color: 'text.primary',
+                      py: 2,
+                      borderBottom: '2px solid',
+                      borderColor: 'grey.300',
+                    },
+                  }}
+                >
+                  <TableCell>Mã đơn</TableCell>
+                  <TableCell>Ngày mua</TableCell>
+                  <TableCell>Sản phẩm</TableCell>
+                  <TableCell>Tổng tiền</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {orders.map((order) => (
+                  <TableRow
+                    key={order.id}
+                    sx={{
+                      '&:hover': {
+                        backgroundColor: 'grey.50',
+                        transition: 'background-color 0.2s',
+                      },
+                      '& td': {
+                        py: 1.5,
+                        borderBottom: '1px solid',
+                        borderColor: 'grey.200',
+                      },
+                    }}
+                  >
+                    <TableCell>{order.id}</TableCell>
+                    <TableCell>{order.date}</TableCell>
+                    <TableCell>
+                      {order.products.map((product, index) => (
+                        <Stack
+                          direction="row"
+                          spacing={2}
+                          key={index}
+                          alignItems="center"
+                          mt={1}
+                        >
+                          <img
+                            src={product.image}
+                            alt={product.name}
+                            width={50}
+                            style={{
+                              borderRadius: 8,
+                              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)',
+                            }}
+                          />
+                          <Box>
+                            <Typography variant="body1">
+                              {product.name}
+                            </Typography>
+                            <Typography
+                              variant="body2"
+                              sx={{ color: 'text.secondary' }}
+                            >
+                              {product.quantity} x ${product.price}
+                            </Typography>
+                          </Box>
+                        </Stack>
+                      ))}
+                    </TableCell>
+                    <TableCell>${order.total}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Box>
+      </Container>
+      <PaginationComponent
+        sx={{
+          mt: 4,
+          mb: 4,
+          display: 'flex',
+          justifyContent: 'center',
+          '& .MuiPaginationItem-root': {
+            borderRadius: '8px',
+            color: 'primary.main',
+            '&:hover': {
+              bgcolor: 'grey.50',
+            },
+          },
+        }}
+      />
+      <InstagramGallery sx={{ mt: 5 }} />
     </>
   );
 };

@@ -82,7 +82,7 @@ const FooterBottom = () => {
             >
               © Copyright 2024 Book Shop. Product demo by{" "}
               <Link
-                href="https://vnexpress.net/"
+                href="#"
                 target="_blank"
                 underline="hover"
               >

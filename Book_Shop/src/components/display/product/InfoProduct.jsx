@@ -52,70 +52,71 @@ const InfoProduct = () => {
         </Tabs>
       </Box>
       <TabPanel value={value} index={0}>
-        <Typography variant="h6">Product Description</Typography>
-        <br />
+        {/* <Typography variant="h6">Product Description</Typography>
+        <br /> */}
         <Typography variant="h6">
-          Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Donec odio. Quisque volutpat mattis eros.
-          Nullam malesuada erat ut turpis. Suspendisse urna viverra non, semper suscipit, posuere a, pede.
-          Donec nec justo eget felis facilisis fermentum. Aliquam porttitor mauris sit amet orci. Aenean dignissim
-          pellentesque felis. Phasellus ultrices nulla quis nibh. Quisque a lectus. Donec consectetuer ligula
-          vulputate sem tristique cursus.
+        Steven Johnson is a true master of the history of ideas. In this book, he focuses on 
+        just six technologies and explores their ramifications, both good and bad. 
+        He has created a hummingbird symbol for the types of inventions that interest him: 
+        the co-evolution of flowers and insects – intruders from another order of creation. 
+        This book is a collection of completely unexpected “hummingbird inventions”. The six themes presented are: 
+        Glass, Refrigeration, Sound, Cleaning, Time, Light.
         </Typography>
         <List>
           <ListItem>
             <ListItemIcon>
               <StarIcon />
             </ListItemIcon>
-            {/* <ListItemText primary="Donec nec justo eget felis facilisis fermentum." /> */}
-            <Typography variant="h6">Donec nec justo eget felis facilisis fermentum.</Typography>
+            {/* <ListItemText primary="The book's highlight is its engaging storytelling style." /> */}
+            <Typography variant="h6">The book's highlight is its engaging storytelling style.</Typography>
           </ListItem>
           <ListItem>
             <ListItemIcon>
               <StarIcon />
             </ListItemIcon>
-            {/* <ListItemText primary="Suspendisse urna viverra non, semper suscipit pede." /> */}
-            <Typography variant="h6">Suspendisse urna viverra non, semper suscipit pede.</Typography>
+            {/* <ListItemText primary="which ties together historical pieces in a vivid and easy-to-understand way." /> */}
+            <Typography variant="h6">Which ties together historical pieces in a vivid and easy-to-understand way.</Typography>
           </ListItem>
           <ListItem>
             <ListItemIcon>
               <StarIcon />
             </ListItemIcon>
-            {/* <ListItemText primary="Aliquam porttitor mauris sit amet orci." /> */}
-            <Typography variant="h6">Aliquam porttitor mauris sit amet orci.</Typography>
+            {/* <ListItemText primary="helping readers see that progress comes from connection and creativity." /> */}
+            <Typography variant="h6">Helping readers see that progress comes from connection and creativity.</Typography>
           </ListItem>
         </List>
         <Typography variant="h6">
-          Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Donec odio. Quisque volutpat mattis eros.
-          Nullam malesuada erat ut turpis. Suspendisse urna viverra non, semper suscipit, posuere a, pede.
-          Donec nec justo eget felis facilisis fermentum. Aliquam porttitor mauris sit amet orci. Aenean dignissim
-          pellentesque felis. Phasellus ultrices nulla quis nibh. Quisque a lectus. Donec consectetuer ligula
-          vulputate sem tristique cursus.
+        Not just describing technology, Johnson analyzes how small improvements 
+        in each invention led to major turning points in human history – such 
+        as the invention of the microscope that advanced medicine, the refrigeration 
+        system that changed the way food was preserved globally, 
+        or the highly accurate clock that supported maritime activities and world trade.
         </Typography>
       </TabPanel>
       <TabPanel value={value} index={1}>
-        <Typography variant="h6">It is Comfortable and Best</Typography>
+        <Typography variant="h6">There are 6 outstanding inventions in the book</Typography>
         <Typography variant="h6">
-          Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
-          Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+        These are glass, refrigeration, sound, hygiene, time
+        These contents may sound abstract but in fact their applications have brought many innovations to life.
+        Overall, Steven Johnson shows that great innovations are not just due to individual geniuses, 
+        but are the result of an entire innovation ecosystem, where small ideas connect and create huge breakthroughs.
         </Typography>
       </TabPanel>
       <TabPanel value={value} index={2}>
-        <Typography variant="h6">Returns Policy</Typography>
-        <Typography variant="h6">
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Fusce eros justo, accumsan non dui sit amet.
-          Phasellus semper volutpat mi sed imperdiet. Ut odio lectus, vulputate non ex non, mattis sollicitudin purus.
-          Mauris consequat justo a enim interdum, in consequat dolor accumsan. Nulla iaculis diam purus, ut vehicula
-          leo efficitur at.
-        </Typography>
-        <Typography variant="h6">
-          Interdum et malesuada fames ac ante ipsum primis in faucibus. In blandit nunc enim, sit amet pharetra erat aliquet ac.
-        </Typography>
         <Typography variant="h6">Shipping</Typography>
         <Typography variant="h6">
-          Pellentesque ultrices ut sem sit amet lacinia. Sed nisi dui, ultrices ut turpis pulvinar. Sed fringilla ex eget
-          lorem consectetur, consectetur blandit lacus varius. Duis vel scelerisque elit, et vestibulum metus. Integer sit
-          amet tincidunt tortor. Ut lacinia ullamcorper massa, a fermentum arcu vehicula ut. Ut efficitur faucibus dui
-          Nullam tristique dolor eget turpis consequat varius. Quisque a interdum augue. Nam ut nibh mauris.
+        We will support customers to place orders and deliver products to customers within 7 working days.
+        If orders are placed on holidays, we will also process them but it will be 1 day later than usual
+        </Typography>
+        <Typography variant="h6">
+        Products delivered to customers will fully meet delivery standards.
+        </Typography>
+        <Typography variant="h6">Returns Policy</Typography>
+        <Typography variant="h6">
+        All products received by customers but not intact will be refunded immediately
+Customers will be able to return the product within 7 days for any reason
+After 7 days, customers will be able to exchange the product with a 10% fee for unused products
+For used products, we will buy back at a value of 2% of the original value for charity
         </Typography>
       </TabPanel>
       <TabPanel value={value} index={3}>
@@ -146,14 +147,14 @@ const ReviewBox = () => ( // Box này sẽ hiển thị thông tin review, dữ 
     <ReviewItem
       imageSrc="/demo/images/review-image1.jpg"
       author="Tom Johnson"
-      date="07/05/2022"
-      text="Vitae tortor condimentum lacinia quis vel eros donec ac. Nam at lectus urna duis convallis convallis"
+      date="07/02/2025"
+      text="This book has opened my eyes to a lot of useful knowledge about human progress."
     />
     <ReviewItem
       imageSrc="/demo/images/review-image2.jpg"
       author="Jenny Willis"
-      date="07/05/2022"
-      text="Vitae tortor condimentum lacinia quis vel eros donec ac. Nam at lectus urna duis convallis convallis"
+      date="06/03/2025"
+      text="I really admire the creativity and intelligence of scientists. They have made my life today better and easier."
     />
     <AddReview />
   </Box>

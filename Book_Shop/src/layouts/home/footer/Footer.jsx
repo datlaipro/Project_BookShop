@@ -18,8 +18,7 @@ const Footer = () => {
                 style={{ width: "150px", marginBottom: "16px" }}
               />
               <Typography variant="body1" color="textSecondary" sx={{ mb: 2 }}>
-                Nisi, purus vitae, ultrices nunc. Sit ac sit suscipit hendrerit.
-                Gravida massa volutpat aenean odio erat nullam fringilla.
+              Global distribution system using AI and Blockchain technology. Ensuring copyright for authors and publishers.
               </Typography>
               <SocialLinks />
             </Box>
@@ -55,8 +54,8 @@ const Footer = () => {
                 <Box>
                   <Typography variant="body2" color="textSecondary">
                     Do you have any queries or suggestions?{" "}
-                    <Link href="mailto:yourinfo@gmail.com" underline="none" color="textPrimary">
-                      yourinfo@gmail.com
+                    <Link href="mailto:info@bookly.com" underline="none" color="textPrimary">
+                      info@bookly.com
                     </Link>
                   </Typography>
                   <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>

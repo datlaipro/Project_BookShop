@@ -1,10 +1,22 @@
 import React from "react";
-import { Navigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "./AuthContext";
+import { isTokenExpired } from "./jwtUtils";
 
-const ProtectedRoute = ({ isAuthenticated, setShowLoginModal, children }) => {
-  if (!isAuthenticated) {
+const ProtectedRoute = ({ children, requireAdmin = false }) => {
+  const { isAuthenticated, setShowLoginModal, userRole, showError } = useAuth();
+  const navigate = useNavigate();
+  const token = localStorage.getItem("jwtToken");
+
+  if (!isAuthenticated || !token || isTokenExpired(token)) {
     setShowLoginModal(true);
-    return null; // Không điều hướng, chỉ hiển thị UserModal
+    return null;
+  }
+
+  if (requireAdmin && userRole !== "ROLE_ADMIN") {
+    showError("Bạn cần quyền admin để truy cập trang này!");
+    navigate("/");
+    return null;
   }
 
   return children;

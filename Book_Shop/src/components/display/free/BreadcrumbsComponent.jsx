@@ -1,4 +1,4 @@
-// BreadcrumbsComponent
+// Component phân trang BreadcrumbsComponent
 
 import React from "react";
 import { Box, Container, Typography, Breadcrumbs, Link } from "@mui/material";

@@ -1,66 +1,131 @@
-// COMPONENT NÀY LÀ BỘ LỌC TÌM KIẾM CHO TRANG SHOP
+import React, { useState } from 'react';
+import {
+  Box, Typography, List, ListItem, ListItemText,
+  TextField, IconButton, Drawer, Divider, InputAdornment
+} from '@mui/material';
+import MenuIcon from '@mui/icons-material/Menu';
+import SearchIcon from '@mui/icons-material/Search';
 
-import React, { useState } from "react";
-import { 
-  Box, Typography, List, ListItem, ListItemText, 
-  TextField, IconButton, Drawer, Divider, InputAdornment 
-} from "@mui/material";
-import MenuIcon from "@mui/icons-material/Menu";
-import SearchIcon from "@mui/icons-material/Search"; // Biểu tượng tìm kiếm
-
-const Sidebar = () => {
+const Sidebar = ({ onFilterChange }) => {
   const [openDrawer, setOpenDrawer] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedLanguage, setSelectedLanguage] = useState('');
+  const [selectedPriceRange, setSelectedPriceRange] = useState('');
 
   const toggleDrawer = (open) => () => {
     setOpenDrawer(open);
   };
 
   const handleSearch = () => {
-    console.log("Tìm kiếm:", searchQuery);
-    // Thêm logic tìm kiếm tại đây (ví dụ: gọi API, lọc dữ liệu, v.v.)
+    onFilterChange({ searchQuery });
   };
 
-  // Danh mục và bộ lọc
+  const handleCategoryChange = (category) => {
+    const newCategory = selectedCategory === category ? '' : category;
+    setSelectedCategory(newCategory);
+    onFilterChange({ category: newCategory });
+  };
+
+  const handleLanguageChange = (language) => {
+    const newLanguage = selectedLanguage === language ? '' : language;
+    setSelectedLanguage(newLanguage);
+    onFilterChange({ language: newLanguage });
+  };
+
+  const handlePriceRangeChange = (priceRange) => {
+    const newPriceRange = selectedPriceRange === priceRange ? '' : priceRange;
+    setSelectedPriceRange(newPriceRange);
+    onFilterChange({ priceRange: newPriceRange });
+  };
+
   const filterContent = (
     <>
-      {/* Categories */}
       <Box sx={{ mb: 3 }}>
         <Typography variant="h6" gutterBottom>
           Categories
         </Typography>
         <List>
-          {["All", "Romance", "Recipe", "Sci-Fi", "Lifestyle"].map((category) => (
-            <ListItem button key={category}>
+          {['Novels', 'Romance', 'Ngoại Ngữ', 'Literature', 'Detective'].map((category) => (
+            <ListItem
+              button
+              key={category}
+              onClick={() => handleCategoryChange(category)}
+              sx={{
+                borderRadius: 1,
+                transition: 'background-color 0.2s ease',
+                backgroundColor: selectedCategory === category ? 'primary.light' : 'transparent',
+                color: selectedCategory === category ? 'primary.contrastText' : 'text.primary',
+                '&:hover': {
+                  backgroundColor: selectedCategory === category ? 'primary.light' : 'grey.200',
+                },
+              }}
+            >
               <ListItemText primary={category} />
             </ListItem>
           ))}
         </List>
       </Box>
 
-      {/* Tags */}
       <Box sx={{ mb: 3 }}>
         <Typography variant="h6" gutterBottom>
-          Tags
+          Language
         </Typography>
         <List>
-          {["Sci-Fi", "Revenge", "Zombie", "Vampire"].map((tag) => (
-            <ListItem button key={tag}>
-              <ListItemText primary={tag} />
+          {['English', 'Tiếng Việt', 'Chinese', 'Russian', 'French'].map((language) => (
+            <ListItem
+              button
+              key={language}
+              onClick={() => handleLanguageChange(language)}
+              sx={{
+                borderRadius: 1,
+                transition: 'background-color 0.2s ease',
+                backgroundColor: selectedLanguage === language ? 'primary.light' : 'transparent',
+                color: selectedLanguage === language ? 'primary.contrastText' : 'text.primary',
+                '&:hover': {
+                  backgroundColor: selectedLanguage === language ? 'primary.light' : 'grey.200',
+                },
+              }}
+            >
+              <ListItemText primary={language} />
             </ListItem>
           ))}
         </List>
       </Box>
 
-      {/* Filter by Price */}
       <Box sx={{ mb: 3 }}>
         <Typography variant="h6" gutterBottom>
           Filter by Price
         </Typography>
         <List>
-          {["Less than $10", "$10- $20", "$20- $30", "$30- $40", "$40- $50"].map((price) => (
-            <ListItem button key={price}>
-              <ListItemText primary={price} />
+          {[
+            '0-10', // Less than $10
+            '10-20', // $10-$20
+            '20-30', // $20-$30
+            '30-40', // $30-$40
+            '40-50', // $40-$50
+          ].map((priceRange) => (
+            <ListItem
+              button
+              key={priceRange}
+              onClick={() => handlePriceRangeChange(priceRange)}
+              sx={{
+                borderRadius: 1,
+                transition: 'background-color 0.2s ease',
+                backgroundColor: selectedPriceRange === priceRange ? 'primary.light' : 'transparent',
+                color: selectedPriceRange === priceRange ? 'primary.contrastText' : 'text.primary',
+                '&:hover': {
+                  backgroundColor: selectedPriceRange === priceRange ? 'primary.light' : 'grey.200',
+                },
+              }}
+            >
+              <ListItemText
+                primary={
+                  priceRange === '0-10'
+                    ? 'Less than $10'
+                    : `$${priceRange.split('-')[0]}-$${priceRange.split('-')[1]}`
+                }
+              />
             </ListItem>
           ))}
         </List>
@@ -69,23 +134,27 @@ const Sidebar = () => {
   );
 
   return (
-    <Box sx={{ width: "100%" }}>
-      {/* Thanh tìm kiếm + Nút menu */}
-      <Box 
-        sx={{ 
-          display: "flex", 
-          alignItems: "center", 
-          justifyContent: "space-between",
-          mb: 2 
+    <Box sx={{ width: '100%' }}>
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          mb: 2,
         }}
       >
-        {/* TextField với nút tìm kiếm bên phải */}
-        <TextField 
-          fullWidth 
-          placeholder="Search" 
-          variant="outlined" 
+        <TextField
+          fullWidth
+          placeholder="Search"
+          variant="outlined"
           value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          onChange={(e) => {
+            setSearchQuery(e.target.value);
+            onFilterChange({ searchQuery: e.target.value });
+          }}
+          onKeyPress={(e) => {
+            if (e.key === 'Enter') handleSearch();
+          }}
           InputProps={{
             endAdornment: (
               <InputAdornment position="end">
@@ -96,24 +165,16 @@ const Sidebar = () => {
             ),
           }}
         />
-        
-        {/* Nút mở Drawer (chỉ hiển thị khi màn hình nhỏ) */}
-        <IconButton onClick={toggleDrawer(true)} sx={{ display: { md: "none" } }}>
+        <IconButton onClick={toggleDrawer(true)} sx={{ display: { md: 'none' } }}>
           <MenuIcon />
         </IconButton>
       </Box>
 
-      {/* Sidebar cố định khi màn hình lớn */}
-      <Box sx={{ display: { xs: "none", md: "block" } }}>
+      <Box sx={{ display: { xs: 'none', md: 'block' } }}>
         {filterContent}
       </Box>
 
-      {/* Drawer - Hiển thị menu khi bấm vào nút Menu (chỉ khi màn hình nhỏ) */}
-      <Drawer 
-        anchor="left" 
-        open={openDrawer} 
-        onClose={toggleDrawer(false)}
-      >
+      <Drawer anchor="left" open={openDrawer} onClose={toggleDrawer(false)}>
         <Box sx={{ width: 250, p: 2 }}>
           <Typography variant="h6" gutterBottom>
             Menu

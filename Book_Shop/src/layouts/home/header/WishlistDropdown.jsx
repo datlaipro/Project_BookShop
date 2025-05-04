@@ -39,7 +39,7 @@ const WishlistDropdown = () => {
             <Box>
               <Typography variant="subtitle1">The Emerald Crown</Typography>
               <Typography variant="body2">Special discounted price.</Typography>
-              <Button variant="text" size="small">
+              <Button variant="text" size="small" sx={{ color: "#14403a" }}>
                 Add to cart
               </Button>
             </Box>
@@ -50,19 +50,21 @@ const WishlistDropdown = () => {
             <Box>
               <Typography variant="subtitle1">The Last Enchantment</Typography>
               <Typography variant="body2">Perfect for enlightened people.</Typography>
-              <Button variant="text" size="small">
+              <Button variant="text" size="small" sx={{ color: "#14403a" }}>
                 Add to cart
               </Button>
             </Box>
-            <Typography>$400</Typography>
+            <Typography>$29</Typography>
           </ListItem>
         </List>
         <Box mt={2}>
-          <Button variant="contained" fullWidth>
+          <Button variant="contained" fullWidth
+          sx={{ backgroundColor: "#14403a" }}
+          >
             Add all to cart
           </Button>
-          <Button variant="outlined" fullWidth sx={{ mt: 1 }} component={Link} to="/customerprofile">
-            Xem tạm Customer
+          <Button variant="outlined" fullWidth sx={{ mt: 1 }} component={Link} to="#" color="error">
+          Delete Wishlist
           </Button>
         </Box>
       </Menu>

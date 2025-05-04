@@ -1,9 +1,4 @@
-// TODO
-// Kiểm tra giá khuyến mại: Thêm logic để salePrice không vượt quá originalPrice.
-// API: Fetch danh sách sản phẩm từ /api/products và gửi dữ liệu qua POST.
-
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -18,154 +13,301 @@ import {
   TableHead,
   TableRow,
   Alert,
+  Grid,
 } from '@mui/material';
 import Autocomplete from '@mui/material/Autocomplete';
-
-// Dữ liệu mẫu cho Product (thêm originalPrice)
-const products = [
-  { id: 1, name: 'Áo thun', stock: 100, originalPrice: 50000 },
-  { id: 2, name: 'Quần jeans', stock: 50, originalPrice: 120000 },
-  { id: 3, name: 'Giày thể thao', stock: 20, originalPrice: 200000 },
-];
+import axios from 'axios';
 
 function AddDiscount() {
   const navigate = useNavigate();
+  const [discount, setDiscount] = useState({
+    dateStart: '',
+    dateEnd: '',
+    discountProducts: [],
+  });
+  const [products, setProducts] = useState([]);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
 
-  // State cho ngày bắt đầu và kết thúc
-  const [dateStart, setDateStart] = useState('');
-  const [dateEnd, setDateEnd] = useState('');
-  const [error, setError] = useState(''); // State cho thông báo lỗi
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await axios.get('http://localhost:6868/api/product');
+        const productList = response.data.map((p) => ({
+          id: p.id,
+          name: p.name,
+          stock: p.quantity,
+          originalPrice: p.price,
+        }));
+        if (productList.length === 0) {
+          setError('Không có sản phẩm để tạo chương trình khuyến mại');
+        }
+        setProducts(productList);
+      } catch (err) {
+        setError(err.message || 'Không thể tải danh sách sản phẩm');
+        console.error('Lỗi khi lấy sản phẩm:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  // State cho danh sách sản phẩm đã chọn
-  const [selectedProducts, setSelectedProducts] = useState([]);
+    fetchData();
+  }, []);
 
-  // Xử lý thay đổi ngày
   const handleDateChange = (e) => {
     const { name, value } = e.target;
-    if (name === 'dateStart') setDateStart(value);
-    if (name === 'dateEnd') setDateEnd(value);
-    setError(''); // Xóa lỗi khi thay đổi ngày
+    setDiscount((prev) => ({ ...prev, [name]: value }));
+    setError('');
   };
 
-  // Xử lý khi chọn sản phẩm từ Autocomplete
-  const handleProductChange = (event, newValue) => {
-    if (newValue && !selectedProducts.some((p) => p.id === newValue.id)) {
-      setSelectedProducts((prev) => [
-        ...prev,
-        { ...newValue, salePrice: '', quantity: '' },
-      ]);
-    }
+  const handleProductChange = (event, newValues) => {
+    const updatedProducts = newValues.map((newValue) => {
+      const existingProduct = discount.discountProducts.find((p) => p.id === newValue.id);
+      return existingProduct || { ...newValue, salePrice: '', quantity: '' };
+    });
+    setDiscount((prev) => ({ ...prev, discountProducts: updatedProducts }));
+    setError('');
   };
 
-  // Xử lý thay đổi giá và số lượng cho từng sản phẩm
   const handleProductDetailChange = (id, field, value) => {
-    setSelectedProducts((prev) =>
-      prev.map((product) => {
+    setDiscount((prev) => {
+      const newProducts = prev.discountProducts.map((product) => {
         if (product.id === id) {
           if (field === 'quantity') {
             const quantity = parseInt(value) || 0;
             if (quantity > product.stock) {
-              return { ...product, quantity: product.stock }; // Giới hạn quantity bằng stock
+              setError(`Số lượng không được vượt quá tồn kho (${product.stock})`);
+              return { ...product, quantity: product.stock.toString() };
+            }
+          }
+          if (field === 'salePrice') {
+            const salePrice = parseFloat(value) || 0;
+            if (salePrice > product.originalPrice) {
+              setError(
+                `Giá khuyến mại không được vượt quá giá gốc (${product.originalPrice.toLocaleString()} VNĐ)`
+              );
+              return { ...product, salePrice: product.originalPrice.toString() };
             }
           }
           return { ...product, [field]: value };
         }
         return product;
-      })
-    );
+      });
+      return { ...prev, discountProducts: newProducts };
+    });
   };
 
-  // Xử lý xóa sản phẩm khỏi danh sách
   const handleRemoveProduct = (id) => {
-    setSelectedProducts((prev) => prev.filter((product) => product.id !== id));
+    setDiscount((prev) => ({
+      ...prev,
+      discountProducts: prev.discountProducts.filter((p) => p.id !== id),
+    }));
+    setError('');
   };
 
-  // Kiểm tra ngày hợp lệ
   const isDateValid = () => {
-    if (!dateStart || !dateEnd) return false;
-    const start = new Date(dateStart);
-    const end = new Date(dateEnd);
-    const diffInDays = (end - start) / (1000 * 60 * 60 * 24);
-    return diffInDays >= 1;
+    if (!discount.dateStart || !discount.dateEnd) return false;
+    const start = new Date(discount.dateStart);
+    const end = new Date(discount.dateEnd);
+    return end >= start;
   };
 
-  // Kiểm tra dữ liệu sản phẩm hợp lệ
   const isProductsValid = () => {
-    return selectedProducts.every(
-      (p) => p.salePrice !== '' && p.quantity !== '' && parseInt(p.quantity) > 0
+    return (
+      discount.discountProducts.length > 0 &&
+      discount.discountProducts.every(
+        (p) => p.salePrice !== '' && p.quantity !== '' && parseInt(p.quantity) > 0
+      )
     );
   };
 
-  // Xử lý submit form
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!isDateValid()) {
-      setError('Ngày kết thúc phải lớn hơn ngày bắt đầu ít nhất 1 ngày');
+      setError('Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu');
       return;
     }
 
     if (!isProductsValid()) {
-      setError('Vui lòng điền đầy đủ giá và số lượng khuyến mại cho tất cả sản phẩm');
+      setError('Vui lòng chọn ít nhất một sản phẩm và điền đầy đủ giá, số lượng khuyến mại');
       return;
     }
 
     const discountData = {
-      dateStart,
-      dateEnd,
-      products: selectedProducts.map(({ id, salePrice, quantity }) => ({
-        productId: id,
-        salePrice: parseFloat(salePrice) || 0,
-        quantity: parseInt(quantity) || 0,
+      dateCreate: new Date().toISOString().split('T')[0],
+      dateStart: discount.dateStart,
+      dateEnd: discount.dateEnd,
+      discountProducts: discount.discountProducts.map((p) => ({
+        productId: p.id,
+        salePrice: parseFloat(p.salePrice),
+        quantity: parseInt(p.quantity),
       })),
     };
-    console.log('Thêm discount:', discountData);
-    navigate('/admin/discount');
+
+    try {
+      await axios.post('http://localhost:6868/api/discounts', discountData);
+      navigate('/admin/discount');
+    } catch (err) {
+      setError(err.message || 'Lỗi khi tạo mã giảm giá');
+      console.error('Lỗi khi tạo mã giảm giá:', err);
+    }
   };
 
-  return (
-    <Box sx={{ mt: 8 }}>
-      <Typography variant="h5" gutterBottom>
-        Thêm chương trình khuyến mại mới
-      </Typography>
-      <Paper sx={{ p: 3 }}>
-        <Box component="form" onSubmit={handleSubmit}>
-          {/* Khu vực chọn ngày */}
-          <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
-            <TextField
-              label="Ngày bắt đầu"
-              name="dateStart"
-              type="date"
-              value={dateStart}
-              onChange={handleDateChange}
-              InputLabelProps={{ shrink: true }}
-              required
-              fullWidth
-            />
-            <TextField
-              label="Ngày kết thúc"
-              name="dateEnd"
-              type="date"
-              value={dateEnd}
-              onChange={handleDateChange}
-              InputLabelProps={{ shrink: true }}
-              required
-              fullWidth
-            />
-          </Box>
+  if (loading) {
+    return (
+      <Box sx={{ mt: 8, px: { xs: 2, sm: 4 }, maxWidth: '1400px', mx: 'auto' }}>
+        <Typography
+          variant="h6"
+          sx={{
+            color: 'text.secondary',
+            fontWeight: 'medium',
+            textAlign: 'center',
+          }}
+        >
+          Đang tải...
+        </Typography>
+      </Box>
+    );
+  }
 
-          {/* Hiển thị lỗi nếu có */}
+  if (error && products.length === 0) {
+    return (
+      <Box sx={{ mt: 8, px: { xs: 2, sm: 4 }, maxWidth: '1400px', mx: 'auto' }}>
+        <Alert
+          severity="error"
+          sx={{
+            borderRadius: '8px',
+            mb: 2,
+          }}
+        >
+          {error}
+        </Alert>
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={() => navigate('/admin/discount')}
+          sx={{
+            borderRadius: '20px',
+            textTransform: 'none',
+            fontWeight: 'medium',
+            px: 3,
+            py: 1,
+            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+            '&:hover': {
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+              bgcolor: 'primary.dark',
+            },
+          }}
+        >
+          Quay lại
+        </Button>
+      </Box>
+    );
+  }
+
+  return (
+    <Box sx={{ mt: 8, px: { xs: 2, sm: 4 }, maxWidth: '1400px', mx: 'auto' }}>
+      <Typography
+        variant="h5"
+        gutterBottom
+        sx={{
+          fontWeight: 'bold',
+          color: '#1a2820',
+          letterSpacing: '0.5px',
+        }}
+      >
+        THÊM CHƯƠNG TRÌNH KHUYẾN MẠI
+      </Typography>
+      <Paper
+        sx={{
+          p: 3,
+          borderRadius: '12px',
+          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
+        }}
+      >
+        <Box component="form" onSubmit={handleSubmit}>
           {error && (
-            <Alert severity="error" sx={{ mb: 2 }}>
+            <Alert
+              severity="error"
+              sx={{
+                borderRadius: '8px',
+                mb: 2,
+              }}
+            >
               {error}
             </Alert>
           )}
+          <Grid container spacing={2} sx={{ mb: 3 }}>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Ngày bắt đầu"
+                name="dateStart"
+                type="date"
+                value={discount.dateStart}
+                onChange={handleDateChange}
+                InputLabelProps={{ shrink: true }}
+                required
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: '12px',
+                    backgroundColor: 'background.paper',
+                    '&:hover fieldset': {
+                      borderColor: 'primary.main',
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: 'primary.main',
+                      boxShadow: '0 0 8px rgba(25, 118, 210, 0.3)',
+                    },
+                  },
+                  '& .MuiInputLabel-root': {
+                    color: 'text.secondary',
+                    fontWeight: 'medium',
+                  },
+                  '& .MuiInputLabel-root.Mui-focused': {
+                    color: 'primary.main',
+                  },
+                }}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Ngày kết thúc"
+                name="dateEnd"
+                type="date"
+                value={discount.dateEnd}
+                onChange={handleDateChange}
+                InputLabelProps={{ shrink: true }}
+                required
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: '12px',
+                    backgroundColor: 'background.paper',
+                    '&:hover fieldset': {
+                      borderColor: 'primary.main',
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: 'primary.main',
+                      boxShadow: '0 0 8px rgba(25, 118, 210, 0.3)',
+                    },
+                  },
+                  '& .MuiInputLabel-root': {
+                    color: 'text.secondary',
+                    fontWeight: 'medium',
+                  },
+                  '& .MuiInputLabel-root.Mui-focused': {
+                    color: 'primary.main',
+                  },
+                }}
+              />
+            </Grid>
+          </Grid>
 
-          {/* Ô chọn sản phẩm */}
           <Autocomplete
-            options={products.filter(
-              (p) => !selectedProducts.some((sp) => sp.id === p.id)
-            )}
+            multiple
+            options={products}
             getOptionLabel={(option) => `${option.id} - ${option.name}`}
             filterOptions={(options, { inputValue }) => {
               const input = inputValue.toLowerCase();
@@ -176,28 +318,88 @@ function AddDiscount() {
               );
             }}
             renderOption={(props, option) => (
-              <li {...props}>
-                {option.id} - {option.name} (Tồn kho: {option.stock}, Giá gốc: {option.originalPrice.toLocaleString()} VNĐ)
-              </li>
+              <Box
+                component="li"
+                {...props}
+                sx={{
+                  py: 1,
+                  '&:hover': {
+                    backgroundColor: 'grey.50',
+                    transition: 'background-color 0.2s',
+                  },
+                }}
+              >
+                {option.id} - {option.name} (Tồn kho: {option.stock}, Giá gốc:{' '}
+                {option.originalPrice.toLocaleString()} VNĐ)
+              </Box>
             )}
             onChange={handleProductChange}
+            value={discount.discountProducts}
             renderInput={(params) => (
               <TextField
                 {...params}
-                label="Thêm sản phẩm"
+                label="Chọn sản phẩm"
                 placeholder="Gõ ID hoặc tên sản phẩm"
-                margin="normal"
+                sx={{
+                  mb: 2,
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: '12px',
+                    backgroundColor: 'background.paper',
+                    '&:hover fieldset': {
+                      borderColor: 'primary.main',
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: 'primary.main',
+                      boxShadow: '0 0 8px rgba(25, 118, 210, 0.3)',
+                    },
+                  },
+                  '& .MuiInputLabel-root': {
+                    color: 'text.secondary',
+                    fontWeight: 'medium',
+                  },
+                  '& .MuiInputLabel-root.Mui-focused': {
+                    color: 'primary.main',
+                  },
+                }}
               />
             )}
             fullWidth
+            PaperComponent={({ children }) => (
+              <Paper
+                sx={{
+                  borderRadius: '8px',
+                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                }}
+              >
+                {children}
+              </Paper>
+            )}
           />
 
-          {/* Bảng sản phẩm đã chọn */}
-          {selectedProducts.length > 0 && (
-            <TableContainer sx={{ mt: 2 }}>
-              <Table>
+          {discount.discountProducts.length > 0 && (
+            <TableContainer
+              sx={{
+                mt: 3,
+                borderRadius: '8px',
+                border: '1px solid',
+                borderColor: 'grey.200',
+                overflow: 'hidden',
+              }}
+            >
+              <Table sx={{ minWidth: 650 }}>
                 <TableHead>
-                  <TableRow>
+                  <TableRow
+                    sx={{
+                      backgroundColor: 'grey.100',
+                      '& th': {
+                        fontWeight: 'bold',
+                        color: 'text.primary',
+                        py: 1.5,
+                        borderBottom: '2px solid',
+                        borderColor: 'grey.300',
+                      },
+                    }}
+                  >
                     <TableCell>ID</TableCell>
                     <TableCell>Tên sản phẩm</TableCell>
                     <TableCell>Tồn kho</TableCell>
@@ -208,8 +410,21 @@ function AddDiscount() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {selectedProducts.map((product) => (
-                    <TableRow key={product.id}>
+                  {discount.discountProducts.map((product) => (
+                    <TableRow
+                      key={product.id}
+                      sx={{
+                        '&:hover': {
+                          backgroundColor: 'grey.50',
+                          transition: 'background-color 0.2s',
+                        },
+                        '& td': {
+                          py: 1,
+                          borderBottom: '1px solid',
+                          borderColor: 'grey.200',
+                        },
+                      }}
+                    >
                       <TableCell>{product.id}</TableCell>
                       <TableCell>{product.name}</TableCell>
                       <TableCell>{product.stock}</TableCell>
@@ -223,7 +438,20 @@ function AddDiscount() {
                           }
                           size="small"
                           required
-                          inputProps={{ min: 0 }}
+                          inputProps={{ min: 0, max: product.originalPrice }}
+                          sx={{
+                            '& .MuiOutlinedInput-root': {
+                              borderRadius: '8px',
+                              backgroundColor: 'background.paper',
+                              '&:hover fieldset': {
+                                borderColor: 'primary.main',
+                              },
+                              '&.Mui-focused fieldset': {
+                                borderColor: 'primary.main',
+                                boxShadow: '0 0 8px rgba(25, 118, 210, 0.3)',
+                              },
+                            },
+                          }}
                         />
                       </TableCell>
                       <TableCell>
@@ -236,14 +464,40 @@ function AddDiscount() {
                           size="small"
                           required
                           inputProps={{ min: 0, max: product.stock }}
+                          sx={{
+                            '& .MuiOutlinedInput-root': {
+                              borderRadius: '8px',
+                              backgroundColor: 'background.paper',
+                              '&:hover fieldset': {
+                                borderColor: 'primary.main',
+                              },
+                              '&.Mui-focused fieldset': {
+                                borderColor: 'primary.main',
+                                boxShadow: '0 0 8px rgba(25, 118, 210, 0.3)',
+                              },
+                            },
+                          }}
                         />
                       </TableCell>
                       <TableCell>
                         <Button
-                          variant="contained"
+                          variant="outlined"
                           color="error"
                           size="small"
                           onClick={() => handleRemoveProduct(product.id)}
+                          sx={{
+                            borderRadius: '20px',
+                            textTransform: 'none',
+                            fontWeight: 'medium',
+                            px: 2,
+                            py: 0.5,
+                            borderColor: 'error.main',
+                            color: 'error.main',
+                            '&:hover': {
+                              borderColor: 'error.dark',
+                              bgcolor: 'grey.50',
+                            },
+                          }}
                         >
                           Xóa
                         </Button>
@@ -255,18 +509,48 @@ function AddDiscount() {
             </TableContainer>
           )}
 
-          {/* Nút submit */}
-          <Box sx={{ mt: 3 }}>
+          <Box sx={{ mt: 3, display: 'flex', gap: 2 }}>
             <Button
               type="submit"
               variant="contained"
               color="primary"
-              sx={{ mr: 2 }}
-              disabled={selectedProducts.length === 0}
+              disabled={discount.discountProducts.length === 0}
+              sx={{
+                borderRadius: '20px',
+                textTransform: 'none',
+                fontWeight: 'medium',
+                px: 3,
+                py: 1,
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+                '&:hover': {
+                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                  bgcolor: 'primary.dark',
+                },
+                '&.Mui-disabled': {
+                  bgcolor: 'grey.300',
+                  color: 'grey.600',
+                },
+              }}
             >
-              Thêm
+              Lưu
             </Button>
-            <Button variant="outlined" onClick={() => navigate('/admin/discount')}>
+            <Button
+              variant="outlined"
+              onClick={() => navigate('/admin/discount')}
+              sx={{
+                borderRadius: '20px',
+                textTransform: 'none',
+                fontWeight: 'medium',
+                px: 3,
+                py: 1,
+                borderColor: 'grey.400',
+                color: 'text.primary',
+                '&:hover': {
+                  borderColor: 'primary.main',
+                  bgcolor: 'grey.50',
+                },
+              }}
+            >
               Hủy
             </Button>
           </Box>

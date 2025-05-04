@@ -1,393 +1,326 @@
-
-import React, { useState } from 'react';
-import { DataGrid } from '@mui/x-data-grid';
-import Paper from '@mui/material/Paper';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import IconButton from '@mui/material/IconButton';
-import Menu from '@mui/material/Menu';
-import MenuItem from '@mui/material/MenuItem';
-import MoreVertIcon from '@mui/icons-material/MoreVert';
-import Button from '@mui/material/Button';
-import ConfirmDeleteModal from './ConfirmDeleteModal'; // Gọi modal xác nhận xóa
-import VisibilityIcon from '@mui/icons-material/Visibility';
-import EditIcon from '@mui/icons-material/Edit';
+import {
+  Box,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Typography,
+  Button,
+  IconButton,
+  TextField,
+  TablePagination,
+} from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 
-const ProductList = () => {
-  const [rows, setRows] = useState([
-    // Sample data
-    {
-      id: 1,
-      name: 'Product 1',
-      images: ['./demo/images/category2.jpg', 'image2.jpg'],
-      productPrice: 100,
-      quantity: 80,
-      // discount: 20,
-      // weight: 1,
-      // salePerMonth: 10,
-      dateAdded: '2023-01-01',
-      author: 'author 1',
-      // description: 'Description 1',
-      // ingredient: 'Ingredient 1',
-      category: 'category 1',
-      status: 'status 1',
-    },
-    {
-      id: 2,
-      name: 'Product 2',
-      images: ['./demo/images/category2.jpg', 'image4.jpg'],
-      productPrice: 200,
-      quantity: 150,
-      // discount: 25,
-      // weight: 2,
-      // salePerMonth: 20,
-      dateAdded: '2023-02-01',
-      author: 'author 2',
-      // description: 'Description 2',
-      // ingredient: 'Ingredient 2',
-      category: 'category 2',
-      status: 'status 2',
-    },
-  ]);
-  const [openModal, setOpenModal] = useState(false);
-  const [selectedProductId, setSelectedProductId] = useState(null);
+function ProductList() {
   const navigate = useNavigate();
+  const [products, setProducts] = useState([]);
+  const [filteredProducts, setFilteredProducts] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(6); // Tối đa 6 hàng mỗi trang
 
-  const handleAddProduct = () => {
-    navigate('/admin/addproduct'); // Chuyển hướng đến trang thêm sản phẩm
+  // Fetch danh sách sản phẩm
+  useEffect(() => {
+    fetch('http://localhost:6868/api/product')
+      .then((res) => res.json())
+      .then((data) => {
+        setProducts(data);
+        setFilteredProducts(data);
+      })
+      .catch((err) => console.error('Error fetching products:', err));
+  }, []);
+
+  // Xử lý tìm kiếm theo tên
+  useEffect(() => {
+    const filtered = products.filter((product) =>
+      product.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    setFilteredProducts(filtered);
+    setPage(0); // Reset về trang đầu khi tìm kiếm
+  }, [searchTerm, products]);
+
+  // Xử lý thay đổi ô tìm kiếm
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
   };
 
+  // Xóa sản phẩm
   const handleDelete = (id) => {
-    setSelectedProductId(id);
-    setOpenModal(true); // Hiện xác nhận Modal xoa sản phẩm
+    if (window.confirm('Bạn có chắc muốn xóa sản phẩm này?')) {
+      fetch(`http://localhost:6868/api/product/${id}`, { method: 'DELETE' })
+        .then(() => {
+          const updatedProducts = products.filter((product) => product.id !== id);
+          setProducts(updatedProducts);
+          setFilteredProducts(updatedProducts.filter((product) =>
+            product.name.toLowerCase().includes(searchTerm.toLowerCase())
+          ));
+        })
+        .catch((err) => console.error('Error deleting product:', err));
+    }
   };
 
-  const confirmDelete = () => {
-    setRows(rows.filter((row) => row.id !== selectedProductId)); // Cập nhật danh sách sản phẩm
-    setOpenModal(false);
+  // Xem chi tiết sản phẩm
+  const handleView = (id) => {
+    navigate(`/admin/productview/${id}`);
   };
 
-  const cancelDelete = () => {
-    setOpenModal(false); // Đóng modal nếu cancel
+  // Sửa sản phẩm
+  const handleEdit = (id) => {
+    navigate(`/admin/editproduct/${id}`);
   };
 
-  const columns = [
-    { field: 'id', headerName: 'ID', width: 70 },
-    { field: 'name', headerName: 'Product Name', width: 300 },
-    {
-      field: 'images',
-      headerName: 'Images',
-      width: 100,
-      renderCell: (params) => {
-        const firstImage = params.row.images[0]; // Lấy ảnh đầu tiên trong mảng
-        return (
-          <img
-            src={`http://localhost:3000/${firstImage}`}
-            alt="Product"
-            style={{ width: 50, height: 50, objectFit: 'cover' }}
-          />
-        );
-      },
-    },
-    { field: 'productPrice', headerName: 'Product Price', type: 'number', width: 130 },
-    { field: 'quantity', headerName: 'Quantity', type: 'number', width: 130 },
-    // { field: 'discount', headerName: 'Discount', type: 'number', width: 90 },
-    // { field: 'weight', headerName: 'Weight', type: 'number', width: 90 },
-    // { field: 'salePerMonth', headerName: 'Sale Per Month', type: 'number', width: 90 },
-    { field: 'dateAdded', headerName: 'Date Create', width: 200 },
-    { field: 'author', headerName: 'Author', width: 150 },
-    // { field: 'description', headerName: 'Description', width: 90 },
-    // { field: 'ingredient', headerName: 'Ingredient', width: 90 },
-    { field: 'category', headerName: 'Category', width: 150 },
-    { field: 'status', headerName: 'Status', width: 150 },
-    {
-      field: 'actions',
-      headerName: 'Actions',
-      width: 50,
-      renderCell: (params) => <ActionsMenu id={params.row.id} handleDelete={handleDelete} />,
-    },
-  ];
-
-  return (
-    <div style={{ margin: '20px' }}>
-      <Button
-        variant="contained"
-        color="primary"
-        onClick={handleAddProduct}
-        style={{ marginBottom: '10px' }}
-      >
-        Add New Product
-      </Button>
-      <Paper sx={{ height: 700, width: '100%' }}>
-        <DataGrid
-          rows={rows}
-          columns={columns}
-          initialState={{ pagination: { paginationModel: { page: 0, pageSize: 10 } } }}
-          pageSizeOptions={[10, 20]}
-          checkboxSelection
-          sx={{ border: 0}}
-        />
-      </Paper>
-
-      {/* Tác vụ xử lý ở MODAL */}
-      <ConfirmDeleteModal
-        open={openModal}
-        onClose={cancelDelete}
-        onConfirm={confirmDelete}
-      />
-    </div>
-  );
-};
-
-const ActionsMenu = ({ id, handleDelete }) => {  // Nhận dữ liệu id từ state
-  const [anchorEl, setAnchorEl] = useState(null);
-  const open = Boolean(anchorEl);
-  const navigate = useNavigate();
-
-  const handleClick = (event) => {
-    setAnchorEl(event.currentTarget);
+  // Thêm sản phẩm
+  const handleAdd = () => {
+    navigate('/admin/addproduct');
   };
 
-  const handleClose = () => {
-    setAnchorEl(null);
+  // Xử lý thay đổi trang
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
   };
 
-  const handleView = () => {
-    // console.log('Viewing item with id:', id);
-    navigate(`/admin/productview`); // Chuyển hướng đến trang chi tiết sản phẩm
-    // navigate(`/admin/viewProduct/${id}`);
-    handleClose();
-  };
-
-  const handleEdit = () => {
-    // console.log('Editing item with id:', id);
-    navigate(`/admin/editproduct`);
-    // navigate(`/admin/editproduct/${id}`);
-    handleClose();
+  // Xử lý thay đổi số hàng mỗi trang
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
   };
 
   return (
-    <div>
-      <IconButton
-        aria-label="more"
-        aria-controls="long-menu"
-        aria-haspopup="true"
-        onClick={handleClick}
-      >
-        <MoreVertIcon />
-      </IconButton>
-      <Menu
-        id="long-menu"
-        anchorEl={anchorEl}
-        open={open}
-        onClose={handleClose}
-        PaperProps={{
-          style: {
-            maxHeight: 48 * 4.5,
-            width: '15ch',
-          },
+    <Box sx={{ mt: 2, px: { xs: 2, sm: 4 }, maxWidth: '1400px', mx: 'auto' }}>
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          mb: 2,
+          flexWrap: 'wrap',
+          gap: 2,
         }}
       >
-        <MenuItem onClick={handleView}><VisibilityIcon sx={{ mr: 1 }} />View</MenuItem>
-        <MenuItem onClick={handleEdit}><EditIcon sx={{ mr: 1 }} />Edit</MenuItem>
-        <MenuItem onClick={() => handleDelete(id)}><DeleteIcon sx={{ mr: 1 }} />Delete</MenuItem>
-      </Menu>
-    </div>
+        <Typography
+          variant="h5"
+          sx={{
+            fontWeight: 'bold',
+            color: '#1a2820',
+            letterSpacing: '0.5px',
+          }}
+        >
+          DANH SÁCH SẢN PHẨM
+        </Typography>
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={handleAdd}
+          sx={{
+            borderRadius: '20px',
+            textTransform: 'none',
+            fontWeight: 'medium',
+            px: 3,
+            py: 1,
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+            '&:hover': {
+              boxShadow: '0 6px 16px rgba(0, 0, 0, 0.15)',
+              bgcolor: 'primary.dark',
+            },
+          }}
+        >
+          Thêm sản phẩm
+        </Button>
+      </Box>
+
+      {/* Ô tìm kiếm */}
+      <TextField
+        fullWidth
+        label="Tìm kiếm theo tên sản phẩm"
+        value={searchTerm}
+        onChange={handleSearchChange}
+        margin="normal"
+        variant="outlined"
+        sx={{
+          mb: 3,
+          '& .MuiOutlinedInput-root': {
+            borderRadius: '12px',
+            backgroundColor: 'background.paper',
+            '&:hover fieldset': {
+              borderColor: 'primary.main',
+            },
+            '&.Mui-focused fieldset': {
+              borderColor: 'primary.main',
+              boxShadow: '0 0 8px rgba(25, 118, 210, 0.3)',
+            },
+          },
+          '& .MuiInputLabel-root': {
+            color: 'text.secondary',
+            fontWeight: 'medium',
+          },
+          '& .MuiInputLabel-root.Mui-focused': {
+            color: 'primary.main',
+          },
+        }}
+      />
+
+      <TableContainer
+        component={Paper}
+        sx={{
+          borderRadius: '12px',
+          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
+          overflow: 'hidden',
+        }}
+      >
+        <Table sx={{ minWidth: 650 }} aria-label="product table">
+          <TableHead>
+            <TableRow
+              sx={{
+                backgroundColor: 'grey.100',
+                '& th': {
+                  fontWeight: 'bold',
+                  color: 'text.primary',
+                  py: 2,
+                  borderBottom: '2px solid',
+                  borderColor: 'grey.300',
+                },
+              }}
+            >
+              <TableCell>ID</TableCell>
+              <TableCell>Tên</TableCell>
+              <TableCell>Giá</TableCell>
+              <TableCell>Số lượng</TableCell>
+              <TableCell>Tác giả</TableCell>
+              <TableCell>Thể loại</TableCell>
+              <TableCell>Trạng thái</TableCell>
+              <TableCell>Ảnh</TableCell>
+              <TableCell>Hành động</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {filteredProducts
+              .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+              .map((product) => (
+                <TableRow
+                  key={product.id}
+                  sx={{
+                    '&:hover': {
+                      backgroundColor: 'grey.50',
+                      transition: 'background-color 0.2s',
+                    },
+                    '& td': {
+                      py: 1.5,
+                      borderBottom: '1px solid',
+                      borderColor: 'grey.200',
+                    },
+                  }}
+                >
+                  <TableCell>{product.id}</TableCell>
+                  <TableCell sx={{ fontWeight: 'medium' }}>{product.name}</TableCell>
+                  <TableCell>{product.price.toLocaleString()} VNĐ</TableCell>
+                  <TableCell>{product.quantity}</TableCell>
+                  <TableCell>{product.author}</TableCell>
+                  <TableCell>{product.category}</TableCell>
+                  <TableCell
+                    sx={{
+                      color: product.status ? 'success.main' : 'error.main',
+                      fontWeight: 'medium',
+                    }}
+                  >
+                    {product.status ? 'Còn bán' : 'Ngừng bán'}
+                  </TableCell>
+                  <TableCell>
+                    {product.images && product.images.length > 0 ? (
+                      <img
+                        src={product.images[0].imagePath}
+                        alt="product"
+                        style={{
+                          width: 50,
+                          height: 50,
+                          objectFit: 'cover',
+                          borderRadius: '8px',
+                          boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+                        }}
+                      />
+                    ) : (
+                      <Typography variant="body2" color="text.secondary">
+                        Không có ảnh
+                      </Typography>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <IconButton
+                      onClick={() => handleView(product.id)}
+                      sx={{
+                        color: 'info.main',
+                        '&:hover': { bgcolor: 'info.light', transform: 'scale(1.1)' },
+                        transition: 'all 0.2s',
+                      }}
+                    >
+                      <VisibilityIcon />
+                    </IconButton>
+                    <IconButton
+                      onClick={() => handleEdit(product.id)}
+                      sx={{
+                        color: 'warning.main',
+                        '&:hover': { bgcolor: 'warning.light', transform: 'scale(1.1)' },
+                        transition: 'all 0.2s',
+                      }}
+                    >
+                      <EditIcon />
+                    </IconButton>
+                    <IconButton
+                      onClick={() => handleDelete(product.id)}
+                      sx={{
+                        color: 'error.main',
+                        '&:hover': { bgcolor: 'error.light', transform: 'scale(1.1)' },
+                        transition: 'all 0.2s',
+                      }}
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+
+      {/* Phân trang */}
+      <TablePagination
+        rowsPerPageOptions={[6, 12, 24]}
+        component="div"
+        count={filteredProducts.length}
+        rowsPerPage={rowsPerPage}
+        page={page}
+        onPageChange={handleChangePage}
+        onRowsPerPageChange={handleChangeRowsPerPage}
+        labelRowsPerPage="Số hàng mỗi trang:"
+        labelDisplayedRows={({ from, to, count }) => `${from}–${to} của ${count}`}
+        sx={{
+          mt: 2,
+          '& .MuiTablePagination-toolbar': {
+            backgroundColor: 'grey.50',
+            borderRadius: '8px',
+            py: 1,
+          },
+          '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': {
+            color: 'text.secondary',
+            fontWeight: 'medium',
+          },
+          '& .MuiTablePagination-actions button': {
+            borderRadius: '8px',
+            '&:hover': {
+              bgcolor: 'grey.200',
+            },
+          },
+        }}
+      />
+    </Box>
   );
-};
+}
 
 export default ProductList;
-
-
-// import React, { useState } from 'react';
-// import { DataGrid } from '@mui/x-data-grid';
-// import { Box, Typography } from "@mui/material";
-
-// import Paper from '@mui/material/Paper';
-// import { useNavigate } from 'react-router-dom';
-// import IconButton from '@mui/material/IconButton';
-// import Menu from '@mui/material/Menu';
-// import MenuItem from '@mui/material/MenuItem';
-// import MoreVertIcon from '@mui/icons-material/MoreVert';
-// import Button from '@mui/material/Button';
-// import ConfirmDeleteModal from './ConfirmDeleteModal'; // Giả định bạn đã có component này
-// import VisibilityIcon from '@mui/icons-material/Visibility';
-// import EditIcon from '@mui/icons-material/Edit';
-// import DeleteIcon from '@mui/icons-material/Delete';
-
-// // Dữ liệu mẫu
-// const products = [
-//   {
-//     id: 1,
-//     name: 'Sách A',
-//     productPrice: 50000,
-//     quantity: 100,
-//     dateAdded: '2023-01-01',
-//     author: 'Tác giả A',
-//     description: 'Mô tả sách A',
-//     content: 'Nội dung sách A',
-//     language: 'Tiếng Việt',
-//     category: 'Văn học',
-//     status: 'Còn hàng',
-//     images: ['/images/product1.jpg'], // Giả định từ bảng ProductImage
-//   },
-//   {
-//     id: 2,
-//     name: 'Sách B',
-//     productPrice: 75000,
-//     quantity: 50,
-//     dateAdded: '2023-02-01',
-//     author: 'Tác giả B',
-//     description: 'Mô tả sách B',
-//     content: 'Nội dung sách B',
-//     language: 'Tiếng Anh',
-//     category: 'Khoa học',
-//     status: 'Hết hàng',
-//     images: ['/images/product2.jpg'],
-//   },
-// ];
-
-// const ProductList = () => {
-//   const navigate = useNavigate();
-//   const [rows, setRows] = useState(products);
-//   const [openModal, setOpenModal] = useState(false);
-//   const [selectedProductId, setSelectedProductId] = useState(null);
-
-//   const handleAddProduct = () => {
-//     navigate('/admin/create-product');
-//   };
-
-//   const handleDelete = (id) => {
-//     setSelectedProductId(id);
-//     setOpenModal(true);
-//   };
-
-//   const confirmDelete = () => {
-//     setRows(rows.filter((row) => row.id !== selectedProductId));
-//     setOpenModal(false);
-//   };
-
-//   const cancelDelete = () => {
-//     setOpenModal(false);
-//   };
-
-//   const columns = [
-//     { field: 'id', headerName: 'ID', width: 70 },
-//     { field: 'name', headerName: 'Tên sản phẩm', width: 200 },
-//     {
-//       field: 'images',
-//       headerName: 'Ảnh',
-//       width: 100,
-//       renderCell: (params) => {
-//         const firstImage = params.row.images[0];
-//         return (
-//           <img
-//             src={firstImage}
-//             alt="Product"
-//             style={{ width: 50, height: 50, objectFit: 'cover' }}
-//           />
-//         );
-//       },
-//     },
-//     { field: 'productPrice', headerName: 'Giá sản phẩm', type: 'number', width: 100 },
-//     { field: 'quantity', headerName: 'Số lượng', type: 'number', width: 100 },
-//     { field: 'dateAdded', headerName: 'Ngày thêm', width: 100 },
-//     { field: 'author', headerName: 'Tác giả', width: 100 },
-//     { field: 'description', headerName: 'Mô tả', width: 100 },
-//     { field: 'content', headerName: 'Nội dung', width: 100 },
-//     { field: 'language', headerName: 'Ngôn ngữ', width: 100 },
-//     { field: 'category', headerName: 'Danh mục', width: 100 },
-//     { field: 'status', headerName: 'Trạng thái', width: 100 },
-//     {
-//       field: 'actions',
-//       headerName: 'Hành động',
-//       width: 70,
-//       renderCell: (params) => (
-//         <ActionsMenu id={params.row.id} handleDelete={handleDelete} />
-//       ),
-//     },
-//   ];
-
-//   return (
-//     <Box sx={{ m: 2 }}>
-//       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-//         <Typography variant="h5">Danh sách sản phẩm</Typography>
-//         <Button variant="contained" color="primary" onClick={handleAddProduct}>
-//           Thêm sản phẩm
-//         </Button>
-//       </Box>
-//       <Paper sx={{ height: 700, width: '100%' }}>
-//         <DataGrid
-//           rows={rows}
-//           columns={columns}
-//           initialState={{ pagination: { paginationModel: { page: 0, pageSize: 10 } } }}
-//           pageSizeOptions={[10, 20]}
-//           checkboxSelection
-//           sx={{ border: 0 }}
-//         />
-//       </Paper>
-//       <ConfirmDeleteModal open={openModal} onClose={cancelDelete} onConfirm={confirmDelete} />
-//     </Box>
-//   );
-// };
-
-// const ActionsMenu = ({ id, handleDelete }) => {
-//   const [anchorEl, setAnchorEl] = useState(null);
-//   const open = Boolean(anchorEl);
-//   const navigate = useNavigate();
-
-//   const handleClick = (event) => {
-//     setAnchorEl(event.currentTarget);
-//   };
-
-//   const handleClose = () => {
-//     setAnchorEl(null);
-//   };
-
-//   const handleView = () => {
-//     navigate(`/admin/view-product/${id}`);
-//     handleClose();
-//   };
-
-//   const handleEdit = () => {
-//     navigate(`/admin/edit-product/${id}`);
-//     handleClose();
-//   };
-
-//   return (
-//     <div>
-//       <IconButton
-//         aria-label="more"
-//         aria-controls="long-menu"
-//         aria-haspopup="true"
-//         onClick={handleClick}
-//       >
-//         <MoreVertIcon />
-//       </IconButton>
-//       <Menu
-//         id="long-menu"
-//         anchorEl={anchorEl}
-//         open={open}
-//         onClose={handleClose}
-//         PaperProps={{
-//           style: {
-//             maxHeight: 48 * 4.5,
-//             width: '15ch',
-//           },
-//         }}
-//       >
-//         <MenuItem onClick={handleView}>
-//           <VisibilityIcon sx={{ mr: 1 }} /> Xem
-//         </MenuItem>
-//         <MenuItem onClick={handleEdit}>
-//           <EditIcon sx={{ mr: 1 }} /> Sửa
-//         </MenuItem>
-//         <MenuItem onClick={() => handleDelete(id)}>
-//           <DeleteIcon sx={{ mr: 1 }} /> Xóa
-//         </MenuItem>
-//       </Menu>
-//     </div>
-//   );
-// };
-
-// export default ProductList;

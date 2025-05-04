@@ -4,9 +4,9 @@ import Grid from "@mui/material/Grid2";
 
 const CategoriesSection = () => {
   const categories = [
-    { title: "Romance", image: "/demo/images/category1.jpg", link: "shop.html" },
-    { title: "Lifestyle", image: "/demo/images/category2.jpg", link: "shop.html" },
-    { title: "Recipe", image: "/demo/images/category3.jpg", link: "shop.html" },
+    { title: "Romance", image: "/demo/images/category1.jpg", link: "/shop" },
+    { title: "Language", image: "/demo/images/category2.jpg", link: "/shop" },
+    { title: "Literature", image: "/demo/images/category3.jpg", link: "/shop" },
   ];
 
   return (

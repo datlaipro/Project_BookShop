@@ -35,7 +35,7 @@ const LatestPosts = () => {
     {
       image: "/demo/images/post-item4.jpg",
       category: "Books",
-      title: "Reading for Mental Health: How Books Can Heal and Inspire",
+      title: "Reading for Mental Health: How Books Can Heal",
       description:
         "In today's remote work environment, productivity is key. Discover the top apps and tools that can help you stay productive.",
       postLink: "/singlepost",

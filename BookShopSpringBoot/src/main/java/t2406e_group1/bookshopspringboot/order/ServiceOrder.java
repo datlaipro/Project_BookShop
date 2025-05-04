@@ -2,7 +2,16 @@ package t2406e_group1.bookshopspringboot.order;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import t2406e_group1.bookshopspringboot.order.details.EntityDetailsOrder;
+import t2406e_group1.bookshopspringboot.order.details.JpaDetailsOrder;
+import t2406e_group1.bookshopspringboot.product.EntityProduct;
+import t2406e_group1.bookshopspringboot.product.JpaProduct;
+import t2406e_group1.bookshopspringboot.user.EntityUser;
+import t2406e_group1.bookshopspringboot.user.JpaUser;
 
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
@@ -12,8 +21,20 @@ public class ServiceOrder {
     @Autowired
     private JpaOrder jpaOrder;
 
-    public ServiceOrder(JpaOrder jpaOrder) {
+    @Autowired
+    private JpaDetailsOrder jpaDetailsOrder;
+
+    @Autowired
+    private JpaUser jpaUser;
+
+    @Autowired
+    private JpaProduct jpaProduct;
+
+    public ServiceOrder(JpaOrder jpaOrder, JpaDetailsOrder jpaDetailsOrder, JpaUser jpaUser, JpaProduct jpaProduct) {
         this.jpaOrder = jpaOrder;
+        this.jpaDetailsOrder = jpaDetailsOrder;
+        this.jpaUser = jpaUser;
+        this.jpaProduct = jpaProduct;
     }
 
     public List<EntityOrder> findAll() {
@@ -21,29 +42,25 @@ public class ServiceOrder {
     }
 
     public Optional<EntityOrder> findById(int id) {
-        return jpaOrder.findById( id); // ép kiểu vì jpaOrder dùng Long
+        return jpaOrder.findById(id);
     }
 
-    public EntityOrder saveEntityOrder(EntityOrder entityOrder) {
+    @Transactional
+    public EntityOrder saveEntityOrder(EntityOrder entityOrder, List<EntityDetailsOrder> orderDetails) {
+        // Gán order cho mỗi detail
+        for (EntityDetailsOrder detail : orderDetails) {
+            detail.setOrder(entityOrder);
+        }
+        entityOrder.setOrderDetails(orderDetails);
+        // Tính tổng tiền
+        double total = orderDetails.stream()
+                .mapToDouble(detail -> detail.getPrice() * detail.getQuantity())
+                .sum();
+        entityOrder.setTotal(total);
         return jpaOrder.save(entityOrder);
     }
 
     public void deleteById(int id) {
-        jpaOrder.deleteById( id); // ép kiểu Long cho đúng với ID của entity
-    }
-
-    // ✅ Thêm hàm update đơn hàng
-    public EntityOrder updateOrder(int orderId, EntityOrder updatedOrder) {
-        Optional<EntityOrder> optionalOrder = jpaOrder.findById( orderId);
-        if (optionalOrder.isEmpty()) {
-            throw new RuntimeException("Đơn hàng không tồn tại!");
-        }
-
-        EntityOrder existingOrder = optionalOrder.get();
-        existingOrder.setOrderDate(updatedOrder.getOrderDate());
-        existingOrder.setStatus(updatedOrder.getStatus());
-        existingOrder.setPhoneNumber(updatedOrder.getPhoneNumber());
-
-        return jpaOrder.save(existingOrder);
+        jpaOrder.deleteById(id);
     }
 }

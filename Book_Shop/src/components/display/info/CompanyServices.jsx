@@ -36,22 +36,22 @@ const CompanyServices = () => {
     {
       icon: <LocalShippingOutlinedIcon fontSize="inherit" />,
       title: "Free delivery",
-      description: "Consectetur adipi elit lorem ipsum dolor sit amet.",
+      description: "We offer free shipping on all orders within Vietnam.",
     },
     {
       icon: <VerifiedOutlinedIcon fontSize="inherit" />,
       title: "Quality guarantee",
-      description: "Dolor sit amet orem ipsu mcons ectetur adipi elit.",
+      description: "Committed to product quality according to standards",
     },
     {
       icon: <LocalOfferOutlinedIcon fontSize="inherit" />,
       title: "Daily offers",
-      description: "Amet consectetur adipi elit loreme ipsum dolor sit.",
+      description: "Every day there will be golden hours from 12pm to 2pm",
     },
     {
       icon: <SecurityOutlinedIcon fontSize="inherit" />,
       title: "100% secure payment",
-      description: "Rem Lopsum dolor sit amet, consectetur adipi elit.",
+      description: "Payment with digital banking system, absolute security",
     },
   ];
 

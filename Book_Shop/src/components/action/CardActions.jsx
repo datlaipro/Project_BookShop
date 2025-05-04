@@ -1,55 +1,79 @@
+// import { useCart } from './CartContext'; // Import useCart trong CartContext
+
 import React from 'react';
-import { IconButton, Box } from '@mui/material';
+import { IconButton, Box, Snackbar, Alert } from '@mui/material';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
-// import FavoriteIcon from '@mui/icons-material/Favorite';
 import VisibilityIcon from '@mui/icons-material/Visibility';
+import { useCart } from './CartContext'; // Import useCart trong CartContext
 
-const CardActions = ({ sx, className }) => {
+const CardActions = ({ sx, className, product }) => {
+  const { addToCart, notification, closeNotification } = useCart();
+
+  const handleAddToCart = () => {
+    addToCart(product);
+  };
+
   return (
-    <Box
-    className={className} // Thêm className để hỗ trợ sử dụng CSS selectors
-      sx={{
-        display: 'flex',
-        gap: 1,
-        justifyContent: 'center',
-        ...sx, // Cho phép tùy chỉnh style từ bên ngoài
-        // có thể nhận custom styles thông qua sx props:
-      }}
-    >
-      {/* Nút giỏ hàng */}
-      <IconButton
-        color="primary"
+    <>
+      <Box
+        className={className}
         sx={{
+          display: 'flex',
+          gap: 1,
+          justifyContent: 'center',
+          ...sx,
+        }}
+      >
+        {/* Nút giỏ hàng */}
+        <IconButton
+          color="primary"
+          sx={{
             bgcolor: '#455a64',
-          color: 'white',
-          '&:hover': {
-            bgcolor: 'rgba(248, 109, 114, 1)',
-          },
-        }}
-      >
-        <ShoppingCartIcon />
-      </IconButton>
+            color: 'white',
+            '&:hover': {
+              bgcolor: 'rgba(248, 109, 114, 1)',
+            },
+          }}
+          onClick={handleAddToCart}
+        >
+          <ShoppingCartIcon />
+        </IconButton>
 
-      {/* Nút XEM NHANH */}
-      <IconButton
-        color="secondary"
-        sx={{
-          bgcolor: '#455a64',
-        //   bgcolor: 'rgba(97, 97, 97, 1)',
-          color: 'white',
-          '&:hover': {
-            bgcolor: 'rgba(248, 109, 114, 1)',
-          },
-        }}
+        {/* Nút XEM NHANH */}
+        <IconButton
+          color="secondary"
+          sx={{
+            bgcolor: '#455a64',
+            color: 'white',
+            '&:hover': {
+              bgcolor: 'rgba(248, 109, 114, 1)',
+            },
+          }}
+        >
+          <VisibilityIcon />
+        </IconButton>
+      </Box>
+
+      {/* Snackbar hiển thị thông báo */}
+      <Snackbar
+        open={notification.open}
+        autoHideDuration={3000}
+        onClose={closeNotification}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       >
-        <VisibilityIcon />
-      </IconButton>
-    </Box>
+        <Alert
+          onClose={closeNotification}
+          severity={notification.severity}
+          sx={{ width: '100%' }}
+        >
+          {notification.message}
+        </Alert>
+      </Snackbar>
+    </>
   );
 };
 
 export default CardActions;
-
 
 // PHIÊN BẢN CŨ
 

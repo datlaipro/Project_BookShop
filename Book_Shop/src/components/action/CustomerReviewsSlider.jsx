@@ -8,7 +8,7 @@ import ReviewCard from "../display/free/ReviewCard";
 // Dữ liệu đánh giá mẫu
 const reviews = [
   {
-    text: "I stumbled upon this bookstore while visiting the city, and it instantly became my favorite spot. The cozy atmosphere, friendly staff, and wide selection of books make every visit a delight!",
+    text: "I find this book very good and meaningful, I always read it every night before going to bed. I will often buy products at this website.",
     name: "Emma Chamberlin",
   },
   {
@@ -20,7 +20,7 @@ const reviews = [
     name: "Kevin Bryan",
   },
   {
-    text: "I stumbled upon this tech store while searching for a new laptop, and I couldn't be happier with my experience! The staff was incredibly knowledgeable and guided me through the process of choosing the perfect device for my needs.",
+    text: "I stumbled upon this book store while searching for a book, and I couldn't be happier with my experience! The staff was incredibly knowledgeable and guided me through the process of choosing the perfect book for my needs.",
     name: "Stevin",
   },
 ];

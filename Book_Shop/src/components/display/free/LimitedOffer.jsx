@@ -136,7 +136,7 @@ const LimitedOffer = () => {
             }}
           >
           <Button
-            href="shop.html"
+            href="/shop"
             variant="contained"
             color="secondary"
             size="large"

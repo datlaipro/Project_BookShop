@@ -30,7 +30,7 @@ const PostCard = ({ image, category, title, description, postLink }) => {
         sx={{ borderRadius: "12px 12px 0 0", position: "absolute", top: 0, left: 0, width: "100%" }}
       />
       <CardContent sx={{ paddingTop: "210px" }}>
-        <Typography variant="body2" color="primary">
+        <Typography variant="body2" color="#677d72">
           {category}
         </Typography>
         <Typography 

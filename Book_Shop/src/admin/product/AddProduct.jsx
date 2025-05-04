@@ -1,311 +1,731 @@
 import React, { useState } from 'react';
-import { Container, Typography, TextField, Button, Box, Chip } from '@mui/material';
-import { createTheme, ThemeProvider } from '@mui/material/styles';
-import Grid from '@mui/material/Grid2';
-import { Autocomplete } from '@mui/material';
-
-const theme = createTheme({
-  typography: {
-    fontFamily: 'Roboto, sans-serif',
-  },
-  palette: {
-    primary: {
-      main: '#3498db',
-    },
-    secondary: {
-      main: '#E1306C',
-    },
-  },
-});
+import { useNavigate } from 'react-router-dom';
+import {
+  Box,
+  Paper,
+  Typography,
+  TextField,
+  Button,
+  Alert,
+  FormControlLabel,
+  Checkbox,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Grid,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+} from '@mui/material';
 
 function AddProduct() {
-  const [name, setName] = useState('');
-  const [productPrice, setProductPrice] = useState('');
-  const [salePrice, setSalePrice] = useState('');
-  const [discount, setDiscount] = useState('');
-  const [weight, setWeight] = useState('');
-  const [salePerMonth, setSalePerMonth] = useState('');
-  const [dateImport, setdateImport] = useState('');
-  const [supplier, setSupplier] = useState('');
-  const [description, setDescription] = useState('');
-  const [ingredient, setIngredient] = useState('');
-  const [recipe, setRecipe] = useState('');
+  const navigate = useNavigate();
 
+  // State cho thông tin sản phẩm
+  const [product, setProduct] = useState({
+    name: '',
+    price: '',
+    quantity: '',
+    author: '',
+    category: '',
+    description: '',
+    content: '',
+    language: '',
+    status: true,
+  });
+  const [images, setImages] = useState([]); // Danh sách ảnh
+  const [newImagePaths, setNewImagePaths] = useState(''); // Nhiều đường dẫn ảnh
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [openConfirmDialog, setOpenConfirmDialog] = useState(false); // State cho modal xác nhận
 
-  // TẢI ẢNH LÊN TRÊN FORM
-  const [images, setImages] = useState([]);
-  const [previewUrls, setPreviewUrls] = useState([]);
-  const handleImageChange = (e) => {
-    const files = Array.from(e.target.files);
-    setImages(files);
-    const previewUrls = files.map(file => URL.createObjectURL(file));
-    setPreviewUrls(previewUrls);
+  // Danh sách giá trị cho category và language
+  const categories = ['Tiểu Thuyết', 'Trinh Thám', 'Ngoại Ngữ', 'Tình Cảm', 'Văn Học'];
+  const languages = ['Tiếng Anh', 'Tiếng Việt', 'Tiếng Trung', 'Tiếng Nga', 'Tiếng Pháp'];
+
+  // Xử lý thay đổi thông tin sản phẩm
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setProduct((prev) => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value,
+    }));
+    setError('');
   };
 
-  // KHAI BÁO ĐỂ NHẬP NHIỀU TAG
-  const [tags, setTags] = useState([]);
-  const handleTagsChange = (event, value) => { setTags(value); };
-  const availableTags = ["Whole Spices", "Spice Blends", "Powdered Spices"];
-
-  // KHAI BÁO PHƯƠNG THỨC FORM DATA
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setSuccess('Product added successfully');
+  // Xử lý thêm ảnh
+  const handleAddImages = () => {
+    if (!newImagePaths) {
+      setError('Vui lòng nhập ít nhất một đường dẫn ảnh');
+      return;
+    }
+    const paths = newImagePaths.split(',').map((path) => path.trim()).filter((path) => path);
+    if (paths.length === 0) {
+      setError('Vui lòng nhập đường dẫn ảnh hợp lệ');
+      return;
+    }
+    setImages((prev) => [...prev, ...paths.map((path) => ({ imagePath: path }))]);
+    setNewImagePaths('');
     setError('');
-    // RESET CÁC Ô NHẬP DỮ LIỆU VỀ BAN ĐẦU
-    setName(''); 
-    setProductPrice(''); 
-    setSalePrice(''); 
-    setDiscount(''); 
-    setWeight(''); 
-    setSalePerMonth(''); 
-    setdateImport(''); 
-    setSupplier(''); 
-    setDescription(''); 
-    setIngredient(''); 
-    setRecipe(''); 
-    setTags([]); 
-    setImages([]); 
-    setPreviewUrls([]);
+  };
+
+  // Xử lý xóa ảnh
+  const handleRemoveImage = (index) => {
+    setImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  // Kiểm tra dữ liệu hợp lệ
+  const isValid = () => {
+    return (
+      product.name &&
+      product.price &&
+      product.quantity &&
+      product.author &&
+      product.category &&
+      product.description &&
+      product.content &&
+      product.language &&
+      parseFloat(product.price) > 0 &&
+      parseInt(product.quantity) >= 0
+    );
+  };
+
+  // Mở modal xác nhận
+  const handleOpenConfirmDialog = (e) => {
+    e.preventDefault();
+    if (!isValid()) {
+      setError('Vui lòng điền đầy đủ thông tin sản phẩm');
+      return;
+    }
+    setOpenConfirmDialog(true);
+  };
+
+  // Đóng modal xác nhận
+  const handleCloseConfirmDialog = () => {
+    setOpenConfirmDialog(false);
+  };
+
+  // Xử lý submit form
+  const handleSubmit = async () => {
+    const productData = {
+      name: product.name,
+      price: parseFloat(product.price),
+      quantity: parseInt(product.quantity),
+      dateAdded: new Date().toISOString(),
+      author: product.author,
+      category: product.category,
+      description: product.description,
+      content: product.content,
+      language: product.language,
+      status: product.status,
+    };
+
+    try {
+      // Thêm sản phẩm
+      const productResponse = await fetch('http://localhost:6868/api/product', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(productData),
+      });
+      const savedProduct = await productResponse.json();
+
+      // Thêm ảnh
+      for (const image of images) {
+        const imageData = {
+          imagePath: image.imagePath,
+          product: { id: savedProduct.id },
+        };
+        await fetch('http://localhost:6868/api/product/images', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(imageData),
+        });
+      }
+
+      setOpenConfirmDialog(false);
+      navigate('/admin/product');
+    } catch (err) {
+      setError('Lỗi khi thêm sản phẩm');
+      console.error('Error:', err);
+      setOpenConfirmDialog(false);
+    }
   };
 
   return (
-    <ThemeProvider theme={theme}>
-      <div style={{ backgroundImage: 'url(https://obi.vn/wp-content/uploads/2023/02/top-50-y-tuong-hinh-nen-trang-dep-tinh-khoi-cuc-ky-doc-dao_1.jpg)', height: '100vh', backgroundSize: 'cover', backgroundPosition: 'center', position: 'relative' }}>
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          height: '100%',
-          width: '100%',
-          background: 'rgba(227, 244, 251, 0.5)',
-        }}></div>
+    <Box sx={{ mt: 2, px: { xs: 2, sm: 4 }, maxWidth: '1200px', mx: 'auto' }}>
+      <Typography
+        variant="h5"
+        gutterBottom
+        sx={{
+          fontWeight: 'bold',
+          color: '#1a2820',
+          letterSpacing: '0.5px',
+        }}
+      >
+        THÊM SẢN PHẨM MỚI
+      </Typography>
+      <Paper
+        sx={{
+          p: 4,
+          borderRadius: '12px',
+          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
+        }}
+      >
+        <Box component="form" onSubmit={handleOpenConfirmDialog}>
+          {error && (
+            <Alert
+              severity="error"
+              sx={{
+                mb: 3,
+                borderRadius: '8px',
+                bgcolor: 'error.light',
+                color: 'error.main',
+                '& .MuiAlert-icon': {
+                  color: 'error.main',
+                },
+              }}
+            >
+              {error}
+            </Alert>
+          )}
 
-        <Box sx={{ flexGrow: 1, padding: 5 }}>
-          <form onSubmit={handleSubmit}>
-            <Typography variant="h4" component="h1" gutterBottom color="#0c4646">ADD NEW PRODUCT FORM</Typography>
+          <Grid container spacing={3}>
+            {/* Cột trái */}
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Tên sản phẩm"
+                name="name"
+                value={product.name}
+                onChange={handleChange}
+                margin="normal"
+                required
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: '8px',
+                    backgroundColor: 'background.paper',
+                    '&:hover fieldset': {
+                      borderColor: 'primary.main',
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: 'primary.main',
+                      boxShadow: '0 0 8px rgba(25, 118, 210, 0.3)',
+                    },
+                  },
+                  '& .MuiInputLabel-root': {
+                    color: 'text.secondary',
+                    fontWeight: 'medium',
+                  },
+                  '& .MuiInputLabel-root.Mui-focused': {
+                    color: 'primary.main',
+                  },
+                }}
+              />
+              <TextField
+                fullWidth
+                label="Giá (VNĐ)"
+                name="price"
+                type="number"
+                value={product.price}
+                onChange={handleChange}
+                margin="normal"
+                required
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: '8px',
+                    backgroundColor: 'background.paper',
+                    '&:hover fieldset': {
+                      borderColor: 'primary.main',
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: 'primary.main',
+                      boxShadow: '0 0 8px rgba(25, 118, 210, 0.3)',
+                    },
+                  },
+                  '& .MuiInputLabel-root': {
+                    color: 'text.secondary',
+                    fontWeight: 'medium',
+                  },
+                  '& .MuiInputLabel-root.Mui-focused': {
+                    color: 'primary.main',
+                  },
+                }}
+              />
+              <TextField
+                fullWidth
+                label="Số lượng"
+                name="quantity"
+                type="number"
+                value={product.quantity}
+                onChange={handleChange}
+                margin="normal"
+                required
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: '8px',
+                    backgroundColor: 'background.paper',
+                    '&:hover fieldset': {
+                      borderColor: 'primary.main',
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: 'primary.main',
+                      boxShadow: '0 0 8px rgba(25, 118, 210, 0.3)',
+                    },
+                  },
+                  '& .MuiInputLabel-root': {
+                    color: 'text.secondary',
+                    fontWeight: 'medium',
+                  },
+                  '& .MuiInputLabel-root.Mui-focused': {
+                    color: 'primary.main',
+                  },
+                }}
+              />
+              <TextField
+                fullWidth
+                label="Tác giả"
+                name="author"
+                value={product.author}
+                onChange={handleChange}
+                margin="normal"
+                required
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: '8px',
+                    backgroundColor: 'background.paper',
+                    '&:hover fieldset': {
+                      borderColor: 'primary.main',
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: 'primary.main',
+                      boxShadow: '0 0 8px rgba(25, 118, 210, 0.3)',
+                    },
+                  },
+                  '& .MuiInputLabel-root': {
+                    color: 'text.secondary',
+                    fontWeight: 'medium',
+                  },
+                  '& .MuiInputLabel-root.Mui-focused': {
+                    color: 'primary.main',
+                  },
+                }}
+              />
+              <FormControl fullWidth margin="normal" required>
+                <InputLabel
+                  sx={{
+                    color: 'text.secondary',
+                    fontWeight: 'medium',
+                    '&.Mui-focused': {
+                      color: 'primary.main',
+                    },
+                  }}
+                >
+                  Thể loại
+                </InputLabel>
+                <Select
+                  name="category"
+                  value={product.category}
+                  onChange={handleChange}
+                  sx={{
+                    borderRadius: '8px',
+                    backgroundColor: 'background.paper',
+                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'primary.main',
+                    },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'primary.main',
+                      boxShadow: '0 0 8px rgba(25, 118, 210, 0.3)',
+                    },
+                  }}
+                >
+                  {categories.map((category) => (
+                    <MenuItem key={category} value={category}>
+                      {category}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+
+            {/* Cột phải */}
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Mô tả"
+                name="description"
+                value={product.description}
+                onChange={handleChange}
+                margin="normal"
+                multiline
+                rows={4}
+                required
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: '8px',
+                    backgroundColor: 'background.paper',
+                    '&:hover fieldset': {
+                      borderColor: 'primary.main',
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: 'primary.main',
+                      boxShadow: '0 0 8px rgba(25, 118, 210, 0.3)',
+                    },
+                  },
+                  '& .MuiInputLabel-root': {
+                    color: 'text.secondary',
+                    fontWeight: 'medium',
+                  },
+                  '& .MuiInputLabel-root.Mui-focused': {
+                    color: 'primary.main',
+                  },
+                }}
+              />
+              <TextField
+                fullWidth
+                label="Nội dung"
+                name="content"
+                value={product.content}
+                onChange={handleChange}
+                margin="normal"
+                multiline
+                rows={4}
+                required
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: '8px',
+                    backgroundColor: 'background.paper',
+                    '&:hover fieldset': {
+                      borderColor: 'primary.main',
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: 'primary.main',
+                      boxShadow: '0 0 8px rgba(25, 118, 210, 0.3)',
+                    },
+                  },
+                  '& .MuiInputLabel-root': {
+                    color: 'text.secondary',
+                    fontWeight: 'medium',
+                  },
+                  '& .MuiInputLabel-root.Mui-focused': {
+                    color: 'primary.main',
+                  },
+                }}
+              />
+              <FormControl fullWidth margin="normal" required>
+                <InputLabel
+                  sx={{
+                    color: 'text.secondary',
+                    fontWeight: 'medium',
+                    '&.Mui-focused': {
+                      color: 'primary.main',
+                    },
+                  }}
+                >
+                  Ngôn ngữ
+                </InputLabel>
+                <Select
+                  name="language"
+                  value={product.language}
+                  onChange={handleChange}
+                  sx={{
+                    borderRadius: '8px',
+                    backgroundColor: 'background.paper',
+                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'primary.main',
+                    },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'primary.main',
+                      boxShadow: '0 0 8px rgba(25, 118, 210, 0.3)',
+                    },
+                  }}
+                >
+                  {languages.map((language) => (
+                    <MenuItem key={language} value={language}>
+                      {language}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    name="status"
+                    checked={product.status}
+                    onChange={handleChange}
+                    sx={{
+                      color: 'primary.main',
+                      '&.Mui-checked': {
+                        color: 'primary.main',
+                      },
+                    }}
+                  />
+                }
+                label="Còn bán"
+                sx={{
+                  mt: 2,
+                  color: 'text.secondary',
+                  fontWeight: 'medium',
+                }}
+              />
+            </Grid>
+          </Grid>
+
+          {/* Quản lý ảnh */}
+          <Box sx={{ mt: 4 }}>
+            <Typography
+              variant="subtitle1"
+              sx={{
+                fontWeight: 'bold',
+                color: '#1a2820',
+                mb: 2,
+              }}
+            >
+              THÊM ẢNH SẢN PHẨM
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 2, mb: 3, alignItems: 'flex-start' }}>
+              <TextField
+                fullWidth
+                label="Nhấn nút Add sau khi thêm link ảnh"
+                value={newImagePaths}
+                onChange={(e) => setNewImagePaths(e.target.value)}
+                helperText="Nhập nhiều đường dẫn bằng cách Add mỗi khi thêm link ảnh mới"
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: '8px',
+                    backgroundColor: 'background.paper',
+                    '&:hover fieldset': {
+                      borderColor: 'primary.main',
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: 'primary.main',
+                      boxShadow: '0 0 8px rgba(25, 118, 210, 0.3)',
+                    },
+                  },
+                  '& .MuiInputLabel-root': {
+                    color: 'text.secondary',
+                    fontWeight: 'medium',
+                  },
+                  '& .MuiInputLabel-root.Mui-focused': {
+                    color: 'primary.main',
+                  },
+                  '& .MuiFormHelperText-root': {
+                    color: 'text.secondary',
+                  },
+                }}
+              />
+              <Button
+                variant="contained"
+                onClick={handleAddImages}
+                sx={{
+                  borderRadius: '8px',
+                  textTransform: 'none',
+                  fontWeight: 'medium',
+                  px: 3,
+                  py: 2,
+                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                  '&:hover': {
+                    boxShadow: '0 6px 16px rgba(0, 0, 0, 0.15)',
+                    bgcolor: 'primary.dark',
+                  },
+                }}
+              >
+                Add
+              </Button>
+            </Box>
+            {images.length > 0 && (
+              <TableContainer
+                sx={{
+                  borderRadius: '8px',
+                  boxShadow: '0 2px 10px rgba(0, 0, 0, 0.05)',
+                }}
+              >
+                <Table>
+                  <TableHead>
+                    <TableRow
+                      sx={{
+                        backgroundColor: 'grey.100',
+                        '& th': {
+                          fontWeight: 'bold',
+                          color: 'text.primary',
+                          py: 2,
+                          borderBottom: '2px solid',
+                          borderColor: 'grey.300',
+                        },
+                      }}
+                    >
+                      <TableCell>Ảnh</TableCell>
+                      <TableCell>Đường dẫn ảnh</TableCell>
+                      <TableCell>Hành động</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {images.map((image, index) => (
+                      <TableRow
+                        key={index}
+                        sx={{
+                          '&:hover': {
+                            backgroundColor: 'grey.50',
+                            transition: 'background-color 0.2s',
+                          },
+                          '& td': {
+                            py: 1.5,
+                            borderBottom: '1px solid',
+                            borderColor: 'grey.200',
+                          },
+                        }}
+                      >
+                        <TableCell>
+                          <img
+                            src={image.imagePath}
+                            alt="preview"
+                            style={{
+                              width: 50,
+                              height: 50,
+                              objectFit: 'cover',
+                              borderRadius: '8px',
+                              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+                            }}
+                          />
+                        </TableCell>
+                        <TableCell>{image.imagePath}</TableCell>
+                        <TableCell>
+                          <Button
+                            variant="contained"
+                            color="error"
+                            size="small"
+                            onClick={() => handleRemoveImage(index)}
+                            sx={{
+                              borderRadius: '8px',
+                              textTransform: 'none',
+                              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+                              '&:hover': {
+                                bgcolor: 'error.dark',
+                                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                              },
+                            }}
+                          >
+                            Xóa
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            )}
+          </Box>
+
+          <Box sx={{ mt: 4, display: 'flex', gap: 2 }}>
             <Button
               type="submit"
               variant="contained"
               color="primary"
-              sx={{ paddingY: 1.5, fontSize: '16px', mt: 2 }}
+              sx={{
+                borderRadius: '8px',
+                textTransform: 'none',
+                fontWeight: 'medium',
+                px: 4,
+                py: 1,
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                '&:hover': {
+                  boxShadow: '0 6px 16px rgba(0, 0, 0, 0.15)',
+                  bgcolor: 'primary.dark',
+                },
+              }}
             >
-              ADD NEW
+              Thêm
             </Button>
-
-            {error && <Typography variant="body2" color="error">{error}</Typography>}
-            {success && <Typography variant="body2" color="primary">{success}</Typography>}
-
-            <Grid container spacing={{ xs: 2, md: 3 }} columns={{ xs: 4, sm: 8, md: 12 }} alignItems="stretch" justifyContent="center">
-              <Grid item size={{ xs: 2, sm: 4, md: 4 }}>
-                <TextField
-                  fullWidth
-                  label="Product Name"
-                  placeholder="Name of Product"
-                  variant="outlined"
-                  margin="normal"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
-                />
-              </Grid>
-              <Grid item size={{ xs: 2, sm: 4, md: 4 }}>
-                <TextField
-                  fullWidth
-                  label="Product Price"
-                  placeholder="Product Price USD Unit"
-                  variant="outlined"
-                  type="number"
-                  margin="normal"
-                  value={productPrice}
-                  onChange={(e) => setProductPrice(e.target.value)}
-                  required
-                />
-              </Grid>
-              <Grid item size={{ xs: 2, sm: 4, md: 4 }}>
-                <TextField
-                  fullWidth
-                  label="Promotional Price"
-                  placeholder="Sale Price USD Unit"
-                  variant="outlined"
-                  margin="normal"
-                  type="number"
-                  value={salePrice}
-                  onChange={(e) => setSalePrice(e.target.value)}
-                  required
-                />
-              </Grid>
-
-              <Grid item size={{ xs: 2, sm: 2, md: 2 }}>
-                <TextField
-                  fullWidth
-                  label="Discount"
-                  placeholder="Discount %"
-                  variant="outlined"
-                  type="number"
-                  margin="normal"
-                  value={discount}
-                  onChange={(e) => setDiscount(e.target.value)}
-                  required
-                />
-              </Grid>
-
-              <Grid item size={{ xs: 2, sm: 2, md: 2 }}>
-                <TextField
-                  fullWidth
-                  label="Weight"
-                  placeholder="Product Weight gram"
-                  type="number"
-                  variant="outlined"
-                  margin="normal"
-                  value={weight}
-                  onChange={(e) => setWeight(e.target.value)}
-                  required
-                />
-              </Grid>
-
-              <Grid item size={{ xs: 2, sm: 2, md: 2 }}>
-                <TextField
-                  fullWidth
-                  label="Sales Per Month"
-                  placeholder="Sales Per Month"
-                  type="number"
-                  variant="outlined"
-                  margin="normal"
-                  value={salePerMonth}
-                  onChange={(e) => setSalePerMonth(e.target.value)}
-                  required
-                />
-              </Grid>
-
-              <Grid item size={{ xs: 2, sm: 2, md: 2 }}>
-                <TextField
-                  fullWidth
-                  label="Date of import"
-                  margin="normal"
-                  placeholder="Date of import"
-                  variant="outlined"
-                  type="date"
-                  value={dateImport}
-                  onChange={(e) => setdateImport(e.target.value)}
-                  InputLabelProps={{ shrink: true }}
-                />
-              </Grid>
-
-              <Grid item size={{ xs: 2, sm: 4, md: 4 }}>
-                <TextField
-                  fullWidth
-                  label="Supplier"
-                  placeholder="Supplier Code"
-                  type="number"
-                  variant="outlined"
-                  margin="normal"
-                  value={supplier}
-                  onChange={(e) => setSupplier(e.target.value)}
-                  required
-                />
-              </Grid>
-
-              <Grid item size={{ xs: 2, sm: 4, md: 4 }}>
-                <TextField
-                  fullWidth
-                  label="Description"
-                  variant="outlined"
-                  margin="normal"
-                  placeholder="Enter Product Description"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  required
-                  multiline
-                  rows={1}
-                />
-              </Grid>
-              <Grid item size={{ xs: 2, sm: 4, md: 4 }}>
-                <TextField
-                  fullWidth
-                  label="Ingredient"
-                  variant="outlined"
-                  margin="normal"
-                  placeholder="Ingredient of Product"
-                  value={ingredient}
-                  onChange={(e) => setIngredient(e.target.value)}
-                  required
-                  multiline
-                  rows={1}
-                />
-              </Grid>
-              <Grid item size={{ xs: 2, sm: 4, md: 4 }}>
-                <TextField
-                  fullWidth
-                  label="Recipe"
-                  variant="outlined"
-                  margin="normal"
-                  placeholder="Recipe of Product"
-                  value={recipe}
-                  onChange={(e) => setRecipe(e.target.value)}
-                  required
-                  multiline
-                  rows={1}
-                />
-              </Grid>
-            </Grid>
-
-            <Grid container spacing={{ xs: 5, md: 10 }} columns={{ xs: 4, sm: 8, md: 12 }} alignItems="stretch" justifyContent="center" sx={{ padding: '30px' }}>
-              <Grid item size={{ xs: 12, sm: 4, md: 4 }}>
-                <Autocomplete
-                  multiple
-                  margin="normal"
-                  id="tags-filled"
-                  options={availableTags}
-                  freeSolo
-                  value={tags}
-                  onChange={handleTagsChange}
-                  renderTags={(value, getTagProps) =>
-                    value.map((option, index) => (
-                      <Chip variant="outlined" label={option} {...getTagProps({ index })} />
-                    ))
-                  }
-                  renderInput={(params) => (
-                    <TextField
-                      {...params}
-                      variant="outlined"
-                      label="Tags"
-                      placeholder="Add tags"
-                    />
-                  )}
-                />
-              </Grid>
-            </Grid>
-
-            <Grid container spacing={{ xs: 5, md: 10 }} columns={{ xs: 4, sm: 8, md: 12 }} alignItems="stretch" justifyContent="center">
-              <Grid item size={{ xs: 4, sm: 8, md: 12 }}>
-                <input
-                  accept="image/*"
-                  style={{ display: 'none' }}
-                  id="raised-button-file"
-                  multiple
-                  type="file"
-                  onChange={handleImageChange}
-                />
-                <label htmlFor="raised-button-file">
-                  <Button variant="contained" color="primary" component="span"> Upload Images </Button>
-                </label>
-
-                <Grid item xs={12}>
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-                    {previewUrls.map((url, index) => (
-                      <img key={index} src={url} alt={`Preview ${index}`} style={{ width: 50, height: 50, objectFit: 'cover' }} />
-                    ))}
-                  </Box>
-                </Grid>
-              </Grid>
-            </Grid>
-          </form>
+            <Button
+              variant="outlined"
+              onClick={() => navigate('/admin/product')}
+              sx={{
+                borderRadius: '8px',
+                textTransform: 'none',
+                fontWeight: 'medium',
+                px: 4,
+                py: 1,
+                borderColor: 'grey.400',
+                color: 'text.primary',
+                '&:hover': {
+                  bgcolor: 'grey.100',
+                  borderColor: 'grey.500',
+                },
+              }}
+            >
+              Hủy
+            </Button>
+          </Box>
         </Box>
-      </div>
-    </ThemeProvider>
+
+        {/* Modal xác nhận */}
+        <Dialog
+          open={openConfirmDialog}
+          onClose={handleCloseConfirmDialog}
+          PaperProps={{
+            sx: {
+              borderRadius: '12px',
+              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
+            },
+          }}
+        >
+          <DialogTitle
+            sx={{
+              fontWeight: 'bold',
+              color: 'text.primary',
+              borderBottom: '1px solid',
+              borderColor: 'grey.200',
+              py: 2,
+            }}
+          >
+            Xác nhận thêm sản phẩm
+          </DialogTitle>
+          <DialogContent sx={{ py: 3 }}>
+            <DialogContentText sx={{ color: 'text.secondary', fontWeight: 'medium' }}>
+              Bạn có chắc muốn thêm sản phẩm này?
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
+            <Button
+              onClick={handleCloseConfirmDialog}
+              sx={{
+                borderRadius: '8px',
+                textTransform: 'none',
+                color: 'text.primary',
+                '&:hover': {
+                  bgcolor: 'grey.100',
+                },
+              }}
+            >
+              Hủy
+            </Button>
+            <Button
+              onClick={handleSubmit}
+              variant="contained"
+              sx={{
+                borderRadius: '8px',
+                textTransform: 'none',
+                fontWeight: 'medium',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+                '&:hover': {
+                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                  bgcolor: 'primary.dark',
+                },
+              }}
+            >
+              Xác nhận
+            </Button>
+          </DialogActions>
+        </Dialog>
+      </Paper>
+    </Box>
   );
 }
 

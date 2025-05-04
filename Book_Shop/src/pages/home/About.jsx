@@ -11,7 +11,6 @@ const About = () => {
         title="About"
         breadcrumbs={[
           { label: "Home", href: "/" },
-          { label: "About", href: "/about" },
           { label: "About" },
         ]}
       />
@@ -31,7 +30,7 @@ const About = () => {
                   backgroundColor: "#f0f0f0",
                 }
               }}
-              onClick={() => window.open("https://www.youtube.com/embed/l4MOE3hZATA", "_blank")}
+              onClick={() => window.open("#", "_blank")}
             >
               ▶
             </Button>
@@ -50,17 +49,15 @@ const About = () => {
             <Typography variant="h3" gutterBottom>
               Best Bookstore of all time
             </Typography>
-            <Typography paragraph>
-              Risus augue curabitur diam senectus congue velit et. Sed vitae metus
-              nibh sit era. Nulla adipiscing pharetra pellentesque maecenas odio
-              eros at. Et libero vulputate amet duis erat volutpat vitae eget.
+            <Typography paragraph variant="h6">
+            We are a pioneer in the field of digital publishing based on AI and Blockchain technology. 
+            We bring customers the best, safest and most transparent experiences in the digital space.
             </Typography>
-            <Typography paragraph>
-              Nulla adipiscing pharetra pellentesque maecenas odio eros at. Et libero
-              vulputate amet duis erat volutpat vitae eget. Quam libero etiam et in
-              ac at quis. Risus augue curabitur diam senectus congue velit et.
+            <Typography paragraph variant="h6">
+            Founded in 2025 with 5 members, we have a mission to popularize quality, responsible knowledge to every corner of the world.
+            Vision to 2030 we will combine with authors to publish digitally identified on Blockchain technology
             </Typography>
-            <Button variant="contained" href="shop.html" sx={{ mt: 3 }}>
+            <Button variant="contained" href="/shop" sx={{ mt: 3, backgroundColor: "#d5d6d6", color: "#fff" }}>
               Go to shop
             </Button>
           </Box>
